@@ -1,15 +1,25 @@
 package com.mtihc.regionselfservice.v2.plots;
 
+import java.util.UUID;
+
+import org.bukkit.OfflinePlayer;
+
 import com.mtihc.regionselfservice.v2.plots.exceptions.EconomyException;
 
 
 public interface IEconomy {
     
-    void deposit(String account, double amount);
+    void deposit(UUID accountHolder, double amount);
     
-    void withdraw(String account, double amount) throws EconomyException;
+    void deposit(OfflinePlayer accountHolder, double amount);
     
-    double getBalance(String account);
+    void withdraw(UUID accountHolder, double amount) throws EconomyException;
+    
+    void withdraw(OfflinePlayer accountHolder, double amount) throws EconomyException;
+    
+    double getBalance(UUID accountHolder);
+    
+    double getBalance(OfflinePlayer accountHolder);
     
     String format(double amount);
     
