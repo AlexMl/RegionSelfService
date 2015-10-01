@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -129,10 +130,12 @@ public class Messages {
 	}
     }
     
-    public void rent_ended(Player renter, Set<UUID> owners, Set<UUID> members, String regionId, String timeString) {
+    public void rent_ended(UUID renterUUID, Set<UUID> owners, Set<UUID> members, String regionId, String timeString) {
 	
-	if (renter != null) {
-	    renter.sendMessage(ChatColor.RED + "The rent time of " + timeString + " has passed. You are no longer a member of region \"" + regionId + "\".");
+	OfflinePlayer renter = Bukkit.getOfflinePlayer(renterUUID);
+	
+	if (renter.isOnline()) {
+	    renter.getPlayer().sendMessage(ChatColor.RED + "The rent time of " + timeString + " has passed. You are no longer a member of region \"" + regionId + "\".");
 	}
 	
 	String permOwner = Permission.INFORM_OWNER_RENTED;
@@ -373,11 +376,11 @@ public class Messages {
 	}
     }
     
-    public void resized(Player resizer, Set<UUID> owners, Set<UUID> members, String regionId, double oldWorth, double newWorth, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+    public void resized(UUID resizerUUID, Set<UUID> owners, Set<UUID> members, String regionId, double oldWorth, double newWorth, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
 	if (oldWidth * oldLength > newWidth * newLength) {
-	    resized_smaller(resizer, owners, members, regionId, newWorth - oldWorth, oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
+	    resized_smaller(resizerUUID, owners, members, regionId, newWorth - oldWorth, oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
 	} else {
-	    resized_bigger(resizer, owners, members, regionId, newWorth - oldWorth, oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
+	    resized_bigger(resizerUUID, owners, members, regionId, newWorth - oldWorth, oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
 	}
     }
     
@@ -397,7 +400,7 @@ public class Messages {
      * creator Region "id" protected.
      * ...show region info....
      */
-    public void resized_bigger(Player resizer, Set<UUID> owners, Set<UUID> members, String regionId, double cost, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+    public void resized_bigger(UUID resizerUUID, Set<UUID> owners, Set<UUID> members, String regionId, double cost, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
 	
 	String permOwner = Permission.INFORM_OWNER_RESIZE;
 	String permMember = Permission.INFORM_MEMBER_RESIZE;
@@ -410,6 +413,8 @@ public class Messages {
 	    msg += "payed " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " and ";
 	}
 	msg += "resized region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " from " + ChatColor.WHITE + oldSize + ChatColor.GREEN + " to " + ChatColor.WHITE + newSize + ChatColor.GREEN + ".";
+	
+	Player resizer = Bukkit.getPlayer(resizerUUID);
 	resizer.sendMessage(msg);
 	
 	String resizeMsg = getResizeMessage(resizer.getName(), regionId, oldSize, newSize);
@@ -440,7 +445,7 @@ public class Messages {
 	}
     }
     
-    public void resized_smaller(Player resizer, Set<UUID> owners, Set<UUID> members, String regionId, double refund, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+    public void resized_smaller(UUID resizerUUID, Set<UUID> owners, Set<UUID> members, String regionId, double refund, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
 	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_RESIZE;
@@ -449,6 +454,7 @@ public class Messages {
 	String oldSize = formatSize(oldWidth, oldLength, oldHeight);
 	String newSize = formatSize(newWidth, newLength, newHeight);
 	
+	Player resizer = Bukkit.getPlayer(resizerUUID);
 	resizer.sendMessage(ChatColor.GREEN + "Resized region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " from " + ChatColor.WHITE + oldSize + ChatColor.GREEN + " to " + ChatColor.WHITE + newSize + ChatColor.GREEN + ".");
 	
 	String msg = getResizeMessage(resizer.getName(), regionId, oldSize, newSize);
