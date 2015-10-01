@@ -19,14 +19,9 @@ public class ForSaleSignData extends PlotSignData {
 	super(values);
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.PlotSignData#serialize()
-     */
     @Override
     public Map<String, Object> serialize() {
-	Map<String, Object> values = super.serialize();
-	
-	return values;
+	return super.serialize();
     }
     
 }
