@@ -2,6 +2,7 @@ package com.mtihc.regionselfservice.v2.plots;
 
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -68,20 +69,23 @@ public class Messages {
 	this.economy = economy;
     }
     
-    public void bought(String regionId, CommandSender buyer, double cost, Set<String> owners, Set<String> members, double share, String taxAccount, double tax) {
+    public void bought(String regionId, CommandSender buyer, double cost, Set<UUID> owners, Set<UUID> members, double share, String taxAccount, double tax) {
+	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_SOLD;
 	String permMember = Permission.INFORM_MEMBER_SOLD;
+	
 	// You bought region <id> for <cost> from <owners>
 	buyer.sendMessage(ChatColor.GREEN + "You bought region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " from " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".");
 	explainTax(buyer, taxAccount, tax);
+	
 	// Region <id> was sold to <buyer>.
 	String msg = ChatColor.GREEN + "Region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " was sold to " + ChatColor.WHITE + buyer.getName() + ChatColor.GREEN + ".";
 	
 	if (owners != null) {
 	    if (owners.size() > 1) {
-		for (String name : owners) {
-		    Player owner = buyer.getServer().getPlayerExact(name);
+		for (UUID ownerUUID : owners) {
+		    Player owner = Bukkit.getPlayer(ownerUUID);
 		    if (owner == null || !owner.isOnline() || !owner.hasPermission(permOwner) || owner.getName().equalsIgnoreCase(buyer.getName())) {
 			continue;
 		    }
@@ -95,7 +99,7 @@ public class Messages {
 	    } else {
 		Player owner;
 		try {
-		    owner = buyer.getServer().getPlayerExact(owners.iterator().next());
+		    owner = Bukkit.getPlayer(owners.iterator().next());
 		} catch (NoSuchElementException e) {
 		    owner = null;
 		}
@@ -107,8 +111,8 @@ public class Messages {
 	    
 	}
 	if (members != null) {
-	    for (String name : members) {
-		Player member = buyer.getServer().getPlayerExact(name);
+	    for (UUID memberUUID : members) {
+		Player member = Bukkit.getPlayer(memberUUID);
 		if (member == null || !member.isOnline() || !member.hasPermission(permMember) || member.getName().equalsIgnoreCase(buyer.getName())) {
 		    continue;
 		}
@@ -125,27 +129,30 @@ public class Messages {
 	}
     }
     
-    public void rent_ended(String renterName, Set<String> owners, Set<String> members, String regionId, String timeString) {
-	Player renter = Bukkit.getPlayer(renterName);
+    public void rent_ended(Player renter, Set<UUID> owners, Set<UUID> members, String regionId, String timeString) {
+	
 	if (renter != null) {
 	    renter.sendMessage(ChatColor.RED + "The rent time of " + timeString + " has passed. You are no longer a member of region \"" + regionId + "\".");
 	}
+	
 	String permOwner = Permission.INFORM_OWNER_RENTED;
 	String permMember = Permission.INFORM_MEMBER_RENTED;
-	String msg = ChatColor.RED + "Player " + renterName + "'s rent time of " + timeString + " has passed. " + renterName + " is no longer a member of region \"" + regionId + "\".";
+	String msg = ChatColor.RED + "Player " + renter.getName() + "'s rent time of " + timeString + " has passed. " + renter.getName() + " is no longer a member of region \"" + regionId + "\".";
+	
 	if (owners != null) {
-	    for (String name : owners) {
-		Player owner = Bukkit.getPlayerExact(name);
-		if (owner == null || !owner.isOnline() || !owner.hasPermission(permOwner) || owner.getName().equalsIgnoreCase(renterName)) {
+	    for (UUID ownerUUID : owners) {
+		Player owner = Bukkit.getPlayer(ownerUUID);
+		if (owner == null || !owner.isOnline() || !owner.hasPermission(permOwner) || ownerUUID.equals(renter.getUniqueId())) {
 		    continue;
 		}
 		owner.sendMessage(msg);
 	    }
 	}
+	
 	if (members != null) {
-	    for (String name : members) {
-		Player member = Bukkit.getPlayerExact(name);
-		if (member == null || !member.isOnline() || !member.hasPermission(permMember) || member.getName().equalsIgnoreCase(renterName)) {
+	    for (UUID memberUUID : members) {
+		Player member = Bukkit.getPlayer(memberUUID);
+		if (member == null || !member.isOnline() || !member.hasPermission(permMember) || memberUUID.equals(renter.getUniqueId())) {
 		    continue;
 		}
 		member.sendMessage(msg);
@@ -153,10 +160,12 @@ public class Messages {
 	}
     }
     
-    public void rented(CommandSender renter, Set<String> owners, Set<String> members, String regionId, double cost, String time) {
+    public void rented(CommandSender renter, Set<UUID> owners, Set<UUID> members, String regionId, double cost, String time) {
+	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_RENTED;
 	String permMember = Permission.INFORM_MEMBER_RENTED;
+	
 	// You rented region <id> for <cost> from <owners>
 	renter.sendMessage(ChatColor.GREEN + "You rented region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " from " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ", for " + ChatColor.WHITE + time + ChatColor.GREEN + ".");
 	
@@ -165,8 +174,8 @@ public class Messages {
 	
 	if (owners != null) {
 	    if (owners.size() > 1) {
-		for (String name : owners) {
-		    Player owner = renter.getServer().getPlayerExact(name);
+		for (UUID ownerUUID : owners) {
+		    Player owner = Bukkit.getPlayer(ownerUUID);
 		    if (owner == null || !owner.isOnline() || !owner.hasPermission(permOwner) || owner.getName().equalsIgnoreCase(renter.getName())) {
 			continue;
 		    }
@@ -179,7 +188,7 @@ public class Messages {
 	    } else {
 		Player owner;
 		try {
-		    owner = renter.getServer().getPlayerExact(owners.iterator().next());
+		    owner = Bukkit.getPlayer(owners.iterator().next());
 		} catch (NoSuchElementException e) {
 		    owner = null;
 		}
@@ -190,13 +199,12 @@ public class Messages {
 	    }
 	}
 	if (members != null) {
-	    for (String name : members) {
-		Player member = renter.getServer().getPlayerExact(name);
+	    for (UUID memberUUID : members) {
+		Player member = Bukkit.getPlayer(memberUUID);
 		if (member == null || !member.isOnline() || !member.hasPermission(permMember) || member.getName().equalsIgnoreCase(renter.getName())) {
 		    continue;
 		}
 		member.sendMessage(msg);
-		//
 		member.sendMessage(ChatColor.GREEN + "You are also member of that region.");
 	    }
 	}
@@ -209,10 +217,12 @@ public class Messages {
      * seller You put region "id" up for sale, for "cost".
      * If the region is sold, the profits are shared amongst "owners".
      */
-    public void upForSale(CommandSender seller, Set<String> owners, Set<String> members, String regionId, double cost) {
+    public void upForSale(CommandSender seller, Set<UUID> owners, Set<UUID> members, String regionId, double cost) {
+	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_UPFORSALE;
 	String permMember = Permission.INFORM_MEMBER_UPFORSALE;
+	
 	// If the region is sold, the profits are shared amongst <owners>.
 	String msg2 = ChatColor.GREEN + "If the region is sold, the profits ";
 	if (owners != null && owners.size() > 1) {
@@ -220,6 +230,7 @@ public class Messages {
 	} else {
 	    msg2 += "are for " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".";
 	}
+	
 	// You put region <id> up for sale, for <cost>.
 	seller.sendMessage(ChatColor.GREEN + "You put region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " up for sale, for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + ".");
 	seller.sendMessage(msg2);
@@ -228,8 +239,8 @@ public class Messages {
 	String msg = ChatColor.GREEN + "Player " + ChatColor.WHITE + seller.getName() + ChatColor.GREEN + " put region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " up for sale, for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + ".";
 	
 	if (owners != null) {
-	    for (String name : owners) {
-		Player player = seller.getServer().getPlayerExact(name);
+	    for (UUID ownerUUID : owners) {
+		Player player = Bukkit.getPlayer(ownerUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permOwner) || player.getName().equalsIgnoreCase(seller.getName())) {
 		    continue;
 		}
@@ -238,8 +249,8 @@ public class Messages {
 		player.sendMessage(msg2);
 	    }
 	} else if (members != null) {
-	    for (String name : members) {
-		Player player = seller.getServer().getPlayerExact(name);
+	    for (UUID memberUUID : members) {
+		Player player = Bukkit.getPlayer(memberUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permMember) || player.getName().equalsIgnoreCase(seller.getName())) {
 		    continue;
 		}
@@ -256,7 +267,8 @@ public class Messages {
      * letter You put region "id" up for rent, for "cost" per "time".
      * If the region is rented out, the profits are shared amongst "owners".
      */
-    public void upForRent(CommandSender letter, Set<String> owners, Set<String> members, String regionId, double costPerTime, String time) {
+    public void upForRent(CommandSender letter, Set<UUID> owners, Set<UUID> members, String regionId, double costPerTime, String time) {
+	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_UPFORRENT;
 	String permMember = Permission.INFORM_MEMBER_UPFORRENT;
@@ -275,8 +287,8 @@ public class Messages {
 	String msg = ChatColor.GREEN + "Player " + ChatColor.WHITE + letter.getName() + ChatColor.GREEN + " put region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " up for rent, for " + ChatColor.WHITE + format(costPerTime) + ChatColor.GREEN + " per " + ChatColor.WHITE + time + ChatColor.GREEN + ".";
 	
 	if (owners != null) {
-	    for (String name : owners) {
-		Player player = letter.getServer().getPlayerExact(name);
+	    for (UUID ownerUUID : owners) {
+		Player player = Bukkit.getPlayer(ownerUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permOwner) || player.getName().equalsIgnoreCase(letter.getName())) {
 		    continue;
 		}
@@ -286,8 +298,8 @@ public class Messages {
 		player.sendMessage(msg2);
 	    }
 	} else if (members != null) {
-	    for (String name : members) {
-		Player player = letter.getServer().getPlayerExact(name);
+	    for (UUID memberUUID : members) {
+		Player player = Bukkit.getPlayer(memberUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permMember) || player.getName().equalsIgnoreCase(letter.getName())) {
 		    continue;
 		}
@@ -305,7 +317,8 @@ public class Messages {
      * You all received an equal share of "share".
      * remover Region "id" removed.
      */
-    public void removed(CommandSender remover, Set<String> owners, Set<String> members, String regionId, double refund) {
+    public void removed(CommandSender remover, Set<UUID> owners, Set<UUID> members, String regionId, double refund) {
+	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_REMOVED;
 	String permMember = Permission.INFORM_MEMBER_REMOVED;
@@ -318,8 +331,8 @@ public class Messages {
 	
 	if (owners != null && !owners.isEmpty()) {
 	    if (owners.size() > 1) {
-		for (String name : owners) {
-		    Player player = remover.getServer().getPlayerExact(name);
+		for (UUID ownerUUID : owners) {
+		    Player player = Bukkit.getPlayer(ownerUUID);
 		    if (player == null || !player.isOnline() || !player.hasPermission(permOwner)) {
 			continue;
 		    }
@@ -335,7 +348,7 @@ public class Messages {
 		    
 		}
 	    } else {
-		Player player = remover.getServer().getPlayerExact(owners.iterator().next());
+		Player player = Bukkit.getPlayer(owners.iterator().next());
 		if (player != null && player.isOnline() && player.hasPermission(permOwner)) {
 		    if (player.getName().equalsIgnoreCase(remover.getName())) {
 			player.sendMessage(msg);
@@ -349,8 +362,8 @@ public class Messages {
 	    }
 	    
 	} else if (members != null) {
-	    for (String name : members) {
-		Player player = remover.getServer().getPlayerExact(name);
+	    for (UUID memberUUID : members) {
+		Player player = Bukkit.getPlayer(memberUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permMember)) {
 		    continue;
 		}
@@ -360,7 +373,7 @@ public class Messages {
 	}
     }
     
-    public void resized(Player resizer, Set<String> owners, Set<String> members, String regionId, double oldWorth, double newWorth, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+    public void resized(Player resizer, Set<UUID> owners, Set<UUID> members, String regionId, double oldWorth, double newWorth, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
 	if (oldWidth * oldLength > newWidth * newLength) {
 	    resized_smaller(resizer, owners, members, regionId, newWorth - oldWorth, oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
 	} else {
@@ -384,7 +397,8 @@ public class Messages {
      * creator Region "id" protected.
      * ...show region info....
      */
-    public void resized_bigger(Player resizer, Set<String> owners, Set<String> members, String regionId, double cost, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+    public void resized_bigger(Player resizer, Set<UUID> owners, Set<UUID> members, String regionId, double cost, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+	
 	String permOwner = Permission.INFORM_OWNER_RESIZE;
 	String permMember = Permission.INFORM_MEMBER_RESIZE;
 	
@@ -401,8 +415,8 @@ public class Messages {
 	String resizeMsg = getResizeMessage(resizer.getName(), regionId, oldSize, newSize);
 	
 	if (owners != null) {
-	    for (String name : owners) {
-		Player player = resizer.getServer().getPlayerExact(name);
+	    for (UUID ownerUUID : owners) {
+		Player player = Bukkit.getPlayer(ownerUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permOwner) || player.getName().equalsIgnoreCase(resizer.getName())) {
 		    continue;
 		}
@@ -413,8 +427,8 @@ public class Messages {
 	    }
 	    
 	} else if (members != null) {
-	    for (String name : members) {
-		Player player = resizer.getServer().getPlayerExact(name);
+	    for (UUID memberUUID : members) {
+		Player player = Bukkit.getPlayer(memberUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permMember) || player.getName().equalsIgnoreCase(resizer.getName())) {
 		    continue;
 		}
@@ -426,7 +440,8 @@ public class Messages {
 	}
     }
     
-    public void resized_smaller(Player resizer, Set<String> owners, Set<String> members, String regionId, double refund, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+    public void resized_smaller(Player resizer, Set<UUID> owners, Set<UUID> members, String regionId, double refund, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
+	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_RESIZE;
 	String permMember = Permission.INFORM_MEMBER_RESIZE;
@@ -440,8 +455,8 @@ public class Messages {
 	
 	if (owners != null) {
 	    if (owners.size() > 1) {
-		for (String name : owners) {
-		    Player player = resizer.getServer().getPlayerExact(name);
+		for (UUID ownerUUID : owners) {
+		    Player player = Bukkit.getPlayer(ownerUUID);
 		    if (player == null || !player.isOnline() || !player.hasPermission(permOwner)) {
 			continue;
 		    }
@@ -456,7 +471,7 @@ public class Messages {
 		    
 		}
 	    } else {
-		Player player = resizer.getServer().getPlayerExact(owners.iterator().next());
+		Player player = Bukkit.getPlayer(owners.iterator().next());
 		if (player != null && player.isOnline() && player.hasPermission(permOwner)) {
 		    if (!player.getName().equalsIgnoreCase(resizer.getName())) {
 			player.sendMessage(msg);
@@ -468,8 +483,8 @@ public class Messages {
 	    }
 	    
 	} else if (members != null) {
-	    for (String name : members) {
-		Player player = resizer.getServer().getPlayerExact(name);
+	    for (UUID memberUUID : members) {
+		Player player = Bukkit.getPlayer(memberUUID);
 		if (player == null || !player.isOnline() || !player.hasPermission(permMember)) {
 		    continue;
 		}
@@ -489,11 +504,20 @@ public class Messages {
 	return width + "x" + length + "x" + height;
     }
     
-    public String format(double amount) {
+    private String format(double amount) {
 	return this.economy.format(amount);
     }
     
-    public double formatShare(double cost, Set<String> owners) {
+    private double formatShare(double cost, Set<UUID> ownerUUIDs) {
+	if (ownerUUIDs == null || ownerUUIDs.isEmpty()) {
+	    return 0;
+	} else {
+	    return cost / ownerUUIDs.size();
+	}
+    }
+    
+    @Deprecated
+    private double __formatShare(double cost, Set<String> owners) {
 	if (owners == null || owners.size() == 0) {
 	    return 0;
 	} else {
@@ -501,7 +525,19 @@ public class Messages {
 	}
     }
     
-    public String toUserfriendlyString(Set<String> names) {
+    private String toUserfriendlyString(Set<UUID> uuids) {
+	if (uuids == null || uuids.isEmpty()) {
+	    return "nobody";
+	}
+	String result = "";
+	for (UUID uuid : uuids) {
+	    result += ", " + Bukkit.getOfflinePlayer(uuid).getName();
+	}
+	return result.substring(2);
+    }
+    
+    @Deprecated
+    private String __toUserfriendlyString(Set<String> names) {
 	if (names == null || names.size() < 1) {
 	    return "nobody";
 	}
