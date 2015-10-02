@@ -12,6 +12,7 @@ import com.mtihc.regionselfservice.v2.plots.Plot;
 import com.mtihc.regionselfservice.v2.plots.PlotWorld;
 import com.mtihc.regionselfservice.v2.plots.exceptions.SignException;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 
 
 public abstract class PlotSignText<T extends IPlotSignData> {
@@ -279,8 +280,7 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	    // set the text on the correct line,
 	    // use the player name, instead of cost.
 	    
-	    // INFO: playerUUID on sign line 2. playerName may be required
-	    lines[1] = playerUUID + separator + timeString;
+	    lines[1] = PlayerUUIDConverter.toPlayerName(playerUUID) + separator + timeString;
 	}
 	
 	private double rentCost;
@@ -341,7 +341,7 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 		    this.rentTime = time;
 		} catch (NumberFormatException e) {
 		    // converting failed, this must be a player name
-		    // INFO look at signs
+		    
 		    this.rentPlayerUUID = Bukkit.getOfflinePlayer(costOrPlayer).getUniqueId();
 		    // so the time must be the remaining rent time for the player
 		    this.rentPlayerTime = time;
