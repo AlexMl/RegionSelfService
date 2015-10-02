@@ -3,7 +3,6 @@ package com.mtihc.regionselfservice.v2.plots.signs;
 import java.util.Map;
 import java.util.UUID;
 
-import org.bukkit.entity.Player;
 import org.bukkit.util.BlockVector;
 
 
@@ -44,8 +43,8 @@ public class ForRentSignData extends PlotSignData {
 	return this.rentPlayer;
     }
     
-    public void setRentPlayer(Player player) {
-	this.rentPlayer = player.getUniqueId();
+    public void setRentPlayer(UUID playerUUID) {
+	this.rentPlayer = playerUUID;
     }
     
     public long getRentPlayerTime() {

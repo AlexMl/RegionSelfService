@@ -466,7 +466,7 @@ public class PlotControl {
 		// put player's name on the sign...
 		// put rent time on the sign
 		ForRentSign newPlotSign = new ForRentSign(plot, sign.getLocation().toVector().toBlockVector());
-		newPlotSign.setRentPlayer(player);
+		newPlotSign.setRentPlayer(player.getUniqueId());
 		newPlotSign.setRentPlayerTime(remainingTime + plot.getRentTime());
 		plot.setSign(newPlotSign);
 		plot.save();
