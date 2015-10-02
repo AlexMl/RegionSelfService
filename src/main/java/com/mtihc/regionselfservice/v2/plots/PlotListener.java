@@ -3,10 +3,9 @@ package com.mtihc.regionselfservice.v2.plots;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -30,6 +29,7 @@ import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForRentSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForSaleSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignType;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 
@@ -44,24 +44,20 @@ class PlotListener implements Listener {
     @EventHandler
     public void onSignChange(SignChangeEvent event) {
 	if (event.isCancelled()) {
-	    return;// event was cancelled
-	}
-	if (!(event.getBlock().getState() instanceof Sign)) {
-	    return;
+	    return;// event was cancelled, Usefull at all? Neccessary?
 	}
 	
 	Sign sign = (Sign) event.getBlock().getState();
 	PlotSignType type = PlotSignType.getPlotSignType(event.getLines());
 	if (type == null) {
-	    return;// not a plot-sign
+	    // not a plot-sign
+	    return;
 	}
 	
-	// player
 	Player player = event.getPlayer();
 	
 	// plot world
-	World world = sign.getWorld();
-	PlotWorld plotWorld = this.mgr.getPlotWorld(world.getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(event.getBlock().getWorld());
 	
 	Plot plot;
 	PlotSignText<?> signText;
@@ -96,7 +92,7 @@ class PlotListener implements Listener {
 	    return;
 	}
 	
-	boolean isOwner = region.isOwner(player.getName());
+	boolean isOwner = region.isOwner(this.mgr.getWorldGuard().wrapPlayer(player));
 	boolean isInside = region.contains(sign.getX(), sign.getY(), sign.getZ());
 	
 	IPlotWorldConfig config = plot.getPlotWorld().getConfig();
@@ -184,7 +180,7 @@ class PlotListener implements Listener {
 	    plotSign = new ForRentSign(plot, sign.getLocation().toVector().toBlockVector());
 	    // no need to set extra data at this point
 	    
-	    this.mgr.messages.upForRent(player, region.getOwners().getPlayers(), region.getMembers().getPlayers(), region.getId(), rentCost, rentTimeString);
+	    this.mgr.messages.upForRent(player, region.getOwners().getUniqueIds(), region.getMembers().getUniqueIds(), region.getId(), rentCost, rentTimeString);
 	} else if (type == PlotSignType.FOR_SALE) {
 	    
 	    // check permission to sell
@@ -206,12 +202,12 @@ class PlotListener implements Listener {
 	    // You can't sell a player's last region,
 	    // because players would be able to work together, to mess up your server
 	    if (plotWorld.getConfig().isReserveFreeRegionsEnabled()) {
-		Set<String> owners = region.getOwners().getPlayers();
-		Set<String> homeless = this.mgr.getControl().getPotentialHomeless(world, owners);
-		if (!homeless.isEmpty()) {
+		Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
+		Set<UUID> homelessUUIDs = this.mgr.getControl().getPotentialHomeless(plotWorld.getWorld(), ownerUUIDs);
+		if (!homelessUUIDs.isEmpty()) {
 		    String homelessString = "";
-		    for (String string : homeless) {
-			homelessString += ", " + string;
+		    for (UUID homelessUUID : homelessUUIDs) {
+			homelessString += ", " + PlayerUUIDConverter.toPlayerName(homelessUUID);
 		    }
 		    homelessString = homelessString.substring(2);
 		    player.sendMessage(ChatColor.RED + "Sorry, you can't sell this region. The following players would become homeless: " + homelessString);
@@ -266,8 +262,7 @@ class PlotListener implements Listener {
 	    plotSign = new ForSaleSign(plot, sign.getLocation().toVector().toBlockVector());
 	    // no need to set extra data at this point
 	    
-	    this.mgr.messages.upForSale(player, region.getOwners().getPlayers(), region.getMembers().getPlayers(), region.getId(), sellCost);
-	    
+	    this.mgr.messages.upForSale(player, region.getOwners().getUniqueIds(), region.getMembers().getUniqueIds(), region.getId(), sellCost);
 	} else {
 	    player.sendMessage(ChatColor.RED + "Unknown sign type: \"" + type.name() + "\"");
 	    return;
@@ -276,7 +271,6 @@ class PlotListener implements Listener {
 	// save new sign data
 	plot.setSign(plotSign);
 	plot.save();
-	
     }
     
     @EventHandler
@@ -284,54 +278,45 @@ class PlotListener implements Listener {
 	if (event.isCancelled()) {
 	    return;// event was cancelled
 	}
-	if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && !event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-	    return;// didn't right-click (or left-click)
-	    
-	    // added left-click because
-	    // right-click doesn't work when you're standing
-	    // too close with a block in your hand.
-	}
-	if (!(event.getClickedBlock().getState() instanceof Sign)) {
-	    return;// not a sign
-	}
-	Sign sign = (Sign) event.getClickedBlock().getState();
-	PlotSignType type = PlotSignType.getPlotSignType(sign.getLines());
-	if (type == null) {
-	    return;// not a plot-sign
-	}
 	
-	// plot world
-	PlotWorld plotWorld = this.mgr.getPlotWorld(sign.getWorld().getName());
-	
-	// get plot information using the sign
-	Plot plot;
-	try {
-	    plot = plotWorld.getPlot(sign);
-	} catch (SignException e) {
-	    // not a valid sign
-	    event.getPlayer().sendMessage(ChatColor.RED + e.getMessage());
-	    event.getClickedBlock().breakNaturally();
-	    return;
+	if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+	    if (event.getClickedBlock().getState() instanceof Sign) {
+		Sign sign = (Sign) event.getClickedBlock().getState();
+		PlotSignType type = PlotSignType.getPlotSignType(sign.getLines());
+		
+		if (type != null) {
+		    PlotWorld plotWorld = this.mgr.getPlotWorld(sign.getWorld());
+		    
+		    try {
+			Plot plot = plotWorld.getPlot(sign);
+			
+			if (plot != null) {
+			    if (plot.getRegion() != null) {
+				// send plot info
+				plot.sendInfo(event.getPlayer());
+				return;
+			    } else {
+				// protected region doesn't exist
+				event.getPlayer().sendMessage(ChatColor.RED + "Sorry, region '" + plot.getRegionId() + "' doesn't exist anymore.");
+				event.getClickedBlock().breakNaturally();
+				plot.delete();
+				return;
+			    }
+			} else {
+			    // didn't find the plot information
+			    event.getPlayer().sendMessage(ChatColor.RED + "Sorry, this sign is invalid. Couldn't find the plot information.");
+			    event.getClickedBlock().breakNaturally();
+			    return;
+			}
+		    } catch (SignException e) {
+			// not a valid sign
+			event.getPlayer().sendMessage(ChatColor.RED + e.getMessage());
+			event.getClickedBlock().breakNaturally();
+			return;
+		    }
+		}
+	    }
 	}
-	
-	if (plot == null) {
-	    // didn't find the plot information
-	    event.getPlayer().sendMessage(ChatColor.RED + "Sorry, this sign is invalid. Couldn't find the plot information.");
-	    event.getClickedBlock().breakNaturally();
-	    return;
-	}
-	
-	if (plot.getRegion() == null) {
-	    // protected region doesn't exist
-	    event.getPlayer().sendMessage(ChatColor.RED + "Sorry, region '" + plot.getRegionId() + "' doesn't exist anymore.");
-	    event.getClickedBlock().breakNaturally();
-	    plot.delete();
-	    return;
-	}
-	
-	// send plot info
-	plot.sendInfo(event.getPlayer());
-	
     }
     
     @EventHandler
@@ -352,7 +337,7 @@ class PlotListener implements Listener {
 	if (block1 == null || block2 == null) {
 	    return false;
 	}
-	return Location.locToBlock(block1.getX()) == Location.locToBlock(block2.getX()) && Location.locToBlock(block1.getZ()) == Location.locToBlock(block2.getZ()) && Location.locToBlock(block1.getY()) == Location.locToBlock(block2.getY());
+	return block1.getLocation().equals(block2.getLocation());
     }
     
     private void onBlockProtect(Block block, Cancellable event, Block originalBlock) {
@@ -370,6 +355,7 @@ class PlotListener implements Listener {
 	    }
 	    return;// not a sign
 	}
+	
 	Sign sign = (Sign) block.getState();
 	Block attached = block.getRelative(((org.bukkit.material.Sign) sign.getData()).getAttachedFace());
 	if (originalBlock != null && !areLocationsEqual(attached, originalBlock)) {
@@ -385,9 +371,7 @@ class PlotListener implements Listener {
 	}
 	
 	String regionId = PlotSignText.getRegionId(sign.getLines());
-	
-	PlotWorld plotWorld = this.mgr.getPlotWorld(sign.getWorld().getName());
-	
+	PlotWorld plotWorld = this.mgr.getPlotWorld(sign.getWorld());
 	Plot plot = plotWorld.getPlot(regionId);
 	
 	if (plot == null) {
@@ -416,7 +400,7 @@ class PlotListener implements Listener {
 	    Player player = e.getPlayer();
 	    
 	    // check region ownership || permission break-any
-	    boolean isOwner = region.isOwner(player.getName());
+	    boolean isOwner = region.isOwner(this.mgr.getWorldGuard().wrapPlayer(player));
 	    if (!isOwner && !player.hasPermission(Permission.BREAK_ANY_SIGN)) {
 		// not an owner, and no special permission
 		player.sendMessage(ChatColor.RED + "You don't own this region.");
@@ -424,7 +408,6 @@ class PlotListener implements Listener {
 		event.setCancelled(true);
 		return;
 	    } else {
-		
 		plot.removeSign(coords);
 		plot.save();
 		Collection<IPlotSignData> signs = plot.getSigns(type);
