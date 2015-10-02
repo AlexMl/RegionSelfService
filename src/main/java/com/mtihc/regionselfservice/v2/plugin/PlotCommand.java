@@ -60,6 +60,7 @@ public class PlotCommand extends SimpleCommand {
 	}
     }
     
+    @SuppressWarnings("deprecation")
     @Command(aliases = {"count"}, args = "[player] [world]", desc = "Count regions.", help = {"Specify a player name, to count another player's regions.", "Specify a world name, to count regions in another world."}, perm = Permission.COUNT)
     public void count(CommandSender sender, String[] args) throws CommandException {
 	
@@ -307,7 +308,7 @@ public class PlotCommand extends SimpleCommand {
 	    world = ((Player) sender).getWorld();
 	}
 	
-	PlotWorld plotWorld = this.mgr.getPlotWorld(world.getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(world);
 	Plot plot = plotWorld.getPlot(regionId);
 	if (plot == null) {
 	    plot = new Plot(plotWorld, new PlotData(regionId, 0, 0, 0));
@@ -447,7 +448,6 @@ public class PlotCommand extends SimpleCommand {
 	    // show how much money you need for a region of size <arg1> x <arg2>
 	    this.mgr.getControl().sendWorth(sender, width, length, world);
 	}
-	
     }
     
 }
