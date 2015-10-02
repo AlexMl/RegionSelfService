@@ -109,9 +109,6 @@ public class Plot extends PlotData {
 	return result;
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.PlotData#setSign(com.mtihc.regionselfservice.v2.plots.PlotSignData)
-     */
     @Override
     public void setSign(IPlotSignData data) {
 	if (!(data instanceof IPlotSign)) {
@@ -173,9 +170,6 @@ public class Plot extends PlotData {
 	return blockVector.getBlockX() + "," + blockVector.getBlockY() + "," + blockVector.getBlockZ();
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.PlotData#setSellCost(double)
-     */
     @Override
     public void setSellCost(double cost) {
 	super.setSellCost(cost);
@@ -200,9 +194,6 @@ public class Plot extends PlotData {
 	}
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.PlotData#setRentCost(double)
-     */
     @Override
     public void setRentCost(double cost, long millisec) {
 	super.setRentCost(cost, millisec);
