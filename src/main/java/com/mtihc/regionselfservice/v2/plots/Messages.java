@@ -10,6 +10,8 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
+
 
 public class Messages {
     
@@ -75,7 +77,7 @@ public class Messages {
 	this.economy = economy;
     }
     
-    public void bought(String regionId, CommandSender buyer, double cost, Set<UUID> owners, Set<UUID> members, double share, String taxAccount, double tax) {
+    public void bought(String regionId, CommandSender buyer, double cost, Set<UUID> owners, Set<UUID> members, double share, UUID taxAccountUUID, double tax) {
 	
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_SOLD;
@@ -83,7 +85,7 @@ public class Messages {
 	
 	// You bought region <id> for <cost> from <owners>
 	buyer.sendMessage(ChatColor.GREEN + "You bought region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " from " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".");
-	explainTax(buyer, taxAccount, tax);
+	explainTax(buyer, taxAccountUUID, tax);
 	
 	// Region <id> was sold to <buyer>.
 	String msg = ChatColor.GREEN + "Region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " was sold to " + ChatColor.WHITE + buyer.getName() + ChatColor.GREEN + ".";
@@ -100,7 +102,7 @@ public class Messages {
 		    owner.sendMessage(ChatColor.GREEN + "Sharing " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " with " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".");
 		    // You all received an equal share of <share>
 		    owner.sendMessage(ChatColor.GREEN + "You all received an equal share of " + ChatColor.WHITE + formatShare(cost, owners));
-		    explainTax(owner, taxAccount, tax);
+		    explainTax(owner, taxAccountUUID, tax);
 		}
 	    } else {
 		Player owner;
@@ -111,7 +113,7 @@ public class Messages {
 		}
 		if (owner != null && owner.isOnline() && owner.hasPermission(permOwner) && !owner.getName().equalsIgnoreCase(buyer.getName())) {
 		    owner.sendMessage(msg + ChatColor.GREEN + " You received " + ChatColor.WHITE + format(cost));
-		    explainTax(owner, taxAccount, tax);
+		    explainTax(owner, taxAccountUUID, tax);
 		}
 	    }
 	    
@@ -129,9 +131,9 @@ public class Messages {
 	}
     }
     
-    private void explainTax(CommandSender sender, String taxAccount, double tax) {
+    private void explainTax(CommandSender sender, UUID taxAccountUUID, double tax) {
 	if (tax != 0) {
-	    sender.sendMessage(ChatColor.WHITE + taxAccount + ChatColor.GREEN + " received the tax of " + ChatColor.WHITE + format(tax) + ChatColor.GREEN + ".");
+	    sender.sendMessage(ChatColor.WHITE + PlayerUUIDConverter.toPlayerName(taxAccountUUID) + ChatColor.GREEN + " received the tax of " + ChatColor.WHITE + format(tax) + ChatColor.GREEN + ".");
 	}
     }
     
@@ -315,6 +317,8 @@ public class Messages {
 		// You are member of this region.
 		player.sendMessage(ChatColor.GREEN + "You are member of this region.");
 	    }
+	} else {
+	    System.out.println("owner + member == null");
 	}
     }
     

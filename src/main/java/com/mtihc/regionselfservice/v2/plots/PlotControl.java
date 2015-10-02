@@ -310,7 +310,7 @@ public class PlotControl {
 		if (!plot.delete()) {
 		    plot.save();
 		}
-		PlotControl.this.mgr.messages.bought(plot.getRegionId(), player, cost, ownerUUIDs, region.getMembers().getUniqueIds(), share, taxAccount.toString(), percentage);
+		PlotControl.this.mgr.messages.bought(plot.getRegionId(), player, cost, ownerUUIDs, region.getMembers().getUniqueIds(), share, taxAccount, percentage);
 		return Prompt.END_OF_CONVERSATION;
 	    }
 	    
