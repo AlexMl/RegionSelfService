@@ -75,13 +75,13 @@ public class PlotWorld {
 	return this.regionManager;
     }
     
-    public Set<String> getPotentialHomeless(Set<String> names) {
-	Set<String> result = new HashSet<String>();
+    public Set<UUID> getPotentialHomeless(Set<UUID> playerUUIDs) {
+	Set<UUID> result = new HashSet<UUID>();
 	World world = getWorld();
-	for (String name : names) {
-	    int count = this.manager.control.getRegionCountOfPlayer(world, name);
-	    if (count - 1 <= 0) {
-		result.add(name);
+	for (UUID playerUUID : playerUUIDs) {
+	    int count = this.manager.control.getRegionCountOfPlayer(world, playerUUID);
+	    if (count < 2) { // INFO: check if correct ( if(count -1 <= 0) { )
+		result.add(playerUUID);
 	    }
 	}
 	return result;
