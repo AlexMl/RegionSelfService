@@ -77,9 +77,9 @@ public class PlotWorld {
     
     public Set<UUID> getPotentialHomeless(Set<UUID> playerUUIDs) {
 	Set<UUID> result = new HashSet<UUID>();
-	World world = getWorld();
+	
 	for (UUID playerUUID : playerUUIDs) {
-	    int count = this.manager.control.getRegionCountOfPlayer(world, playerUUID);
+	    int count = this.manager.control.getRegionCountOfPlayer(getWorld(), playerUUID);
 	    if (count < 2) { // INFO: check if correct ( if(count -1 <= 0) { )
 		result.add(playerUUID);
 	    }
