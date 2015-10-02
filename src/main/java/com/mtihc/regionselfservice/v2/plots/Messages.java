@@ -527,15 +527,6 @@ public class Messages {
 	}
     }
     
-    @Deprecated
-    private double __formatShare(double cost, Set<String> owners) {
-	if (owners == null || owners.size() == 0) {
-	    return 0;
-	} else {
-	    return cost / owners.size();
-	}
-    }
-    
     private String toUserfriendlyString(Set<UUID> uuids) {
 	if (uuids == null || uuids.isEmpty()) {
 	    return "nobody";
@@ -546,17 +537,4 @@ public class Messages {
 	}
 	return result.substring(2);
     }
-    
-    @Deprecated
-    private String __toUserfriendlyString(Set<String> names) {
-	if (names == null || names.size() < 1) {
-	    return "nobody";
-	}
-	String result = "";
-	for (String name : names) {
-	    result += ", " + name;
-	}
-	return result.substring(2);
-    }
-    
 }
