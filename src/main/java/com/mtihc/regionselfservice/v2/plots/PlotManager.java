@@ -194,8 +194,8 @@ public abstract class PlotManager {
 	return this.config;
     }
     
-    public PlotWorld getPlotWorld(UUID worldUID) {
-	return this.worlds.get(worldUID);
+    public PlotWorld getPlotWorld(World world) {
+	return this.worlds.get(world.getUID());
     }
     
     public Collection<PlotWorld> getPlotWorlds() {
