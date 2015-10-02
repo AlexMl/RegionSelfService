@@ -25,17 +25,17 @@ public class ForRentSignData extends PlotSignData {
 	this.rentPlayerTime = 0;
     }
     
-    @Deprecated
     public ForRentSignData(Map<String, Object> values) {
 	super(values);
-	this.rentPlayer = (UUID) values.get("rent-player");
+	this.rentPlayer = values.get("rent-player") == null ? null : UUID.fromString((String) values.get("rent-player"));
 	this.rentPlayerTime = (Integer) values.get("rent-player-time");
     }
     
     @Override
     public Map<String, Object> serialize() {
 	Map<String, Object> values = super.serialize();
-	values.put("rent-player", this.rentPlayer);
+	String uuidString = this.rentPlayer == null ? null : this.rentPlayer.toString();
+	values.put("rent-player", uuidString);
 	values.put("rent-player-time", this.rentPlayerTime);
 	return values;
     }

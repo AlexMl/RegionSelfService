@@ -24,9 +24,7 @@ abstract class PlotSignData implements IPlotSignData {
     
     protected PlotSignData(Map<String, Object> values) {
 	this.coords = (BlockVector) values.get("coords");
-	
-	String typeName = (String) values.get("sign-type");
-	this.type = PlotSignType.valueOf(typeName);
+	this.type = PlotSignType.valueOf((String) values.get("sign-type"));
     }
     
     @Override
