@@ -37,7 +37,6 @@ public class Plot extends PlotData {
 	    // to make sure they're converted
 	    setSign(sign);
 	}
-	
     }
     
     public World getWorld() {
