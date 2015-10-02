@@ -43,6 +43,11 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion.CircularInheritan
 import com.sk89q.worldguard.protection.regions.RegionType;
 
 
+/*
+ * INFO:
+ *  Worldguard uses playernames and player uuids parallel! Both sets are redundant and not synced!
+ */
+
 public class PlotControl {
     
     private PlotManager mgr;
@@ -124,9 +129,7 @@ public class PlotControl {
 		    // player would become homeless
 		    result.add(ownerUUID);
 		}
-		
 	    }
-	    
 	}
 	return result;
     }
@@ -221,9 +224,13 @@ public class PlotControl {
 	//
 	
 	final Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
-	
+	// System.out.println("o:" + region.getOwners().toString());
 	if (reserve) {
+	    
+	    // System.out.println(plotWorld.getPotentialHomeless(ownerUUIDs, 0));
+	    
 	    Set<UUID> homeless = getPotentialHomeless(plotWorld.getWorld(), ownerUUIDs);
+	    // System.out.println(homeless);
 	    if (!homeless.isEmpty()) {
 		String homelessString = "";
 		for (UUID playerUUID : homeless) {
@@ -415,7 +422,8 @@ public class PlotControl {
 	final Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
 	// get members for later
 	final Set<UUID> memberUUIDs = region.getMembers().getUniqueIds();
-	
+	// System.out.println("o:" + region.getOwners().toString());
+	// System.out.println("m:" + region.getMembers().toString());
 	// get rent cost and time
 	final double cost = plot.getRentCost();
 	final String timeString = new TimeStringConverter().convert(plot.getRentTime());
@@ -939,6 +947,8 @@ public class PlotControl {
 	    if (region != null) {
 		Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
 		Set<UUID> homelessUUIDs = getPotentialHomeless(world, ownerUUIDs);
+		// System.out.println(plotWorld.getPotentialHomeless(ownerUUIDs, 0));
+		// System.out.println(homelessUUIDs);
 		if (!homelessUUIDs.isEmpty()) {
 		    String homelessString = "";
 		    for (UUID homelessUUID : homelessUUIDs) {
