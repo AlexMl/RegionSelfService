@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -29,6 +30,7 @@ import com.mtihc.regionselfservice.v2.plots.signs.ForRentSign;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForRentSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignType;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 import com.sk89q.worldedit.bukkit.selections.Selection;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.domains.DefaultDomain;
@@ -38,6 +40,7 @@ import com.sk89q.worldguard.protection.managers.storage.StorageException;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion.CircularInheritanceException;
+import com.sk89q.worldguard.protection.regions.RegionType;
 
 
 public class PlotControl {
@@ -52,17 +55,17 @@ public class PlotControl {
 	return this.mgr;
     }
     
-    public int getRegionCountOfPlayer(World world, String playerName) {
+    public int getRegionCountOfPlayer(World world, UUID playerUUID) {
 	// get WorldGuard's region manager
-	RegionManager regionManager = this.mgr.getPlotWorld(world.getName()).getRegionManager();
+	RegionManager regionManager = this.mgr.getPlotWorld(world).getRegionManager();
 	
 	// get online player
-	Player p = Bukkit.getPlayerExact(playerName);
-	if (p != null) {
-	    // when player is online, use WorldGuard's method of counting regions
-	    return regionManager.getRegionCountOfPlayer(this.mgr.getWorldGuard().wrapPlayer(p));
-	}
-	
+	OfflinePlayer player = Bukkit.getPlayer(playerUUID);
+	// if (player != null) {
+	// when player is online, use WorldGuard's method of counting regions
+	return regionManager.getRegionCountOfPlayer(this.mgr.getWorldGuard().wrapOfflinePlayer(player));
+	// }
+	/*
 	// player is offline
 	
 	// get all regions
@@ -74,33 +77,31 @@ public class PlotControl {
 	// count owned regions
 	int count = 0;
 	for (ProtectedRegion region : regions) {
-	    if (region.isOwner(playerName.toLowerCase())) {
+	    if (region.isOwner(this.mgr.getWorldGuard().wrapOfflinePlayer(Bukkit.getOfflinePlayer(playerUUID)))) {
 		count++;
 	    }
 	}
-	return count;
+	return count;*/
     }
     
-    private static final HashSet<Byte> invisibleBlocks = new HashSet<Byte>();
+    private static final Set<Material> invisibleBlockMaterials = new HashSet<Material>();
     
-    @SuppressWarnings("deprecation")
-    public static HashSet<Byte> getInvisibleBlocks() {
-	if (invisibleBlocks.isEmpty()) {
-	    invisibleBlocks.add((byte) Material.AIR.getId());
-	    invisibleBlocks.add((byte) Material.WATER.getId());
-	    invisibleBlocks.add((byte) Material.STATIONARY_WATER.getId());
-	    invisibleBlocks.add((byte) Material.LAVA.getId());
-	    invisibleBlocks.add((byte) Material.STATIONARY_LAVA.getId());
-	    invisibleBlocks.add((byte) Material.SNOW.getId());
-	    invisibleBlocks.add((byte) Material.LONG_GRASS.getId());
+    private static Set<Material> getInvisibleMaterials() {
+	if (invisibleBlockMaterials.isEmpty()) {
+	    invisibleBlockMaterials.add(Material.AIR);
+	    invisibleBlockMaterials.add(Material.WATER);
+	    invisibleBlockMaterials.add(Material.STATIONARY_WATER);
+	    invisibleBlockMaterials.add(Material.LAVA);
+	    invisibleBlockMaterials.add(Material.STATIONARY_LAVA);
+	    invisibleBlockMaterials.add(Material.SNOW);
+	    invisibleBlockMaterials.add(Material.LONG_GRASS);
 	}
-	return invisibleBlocks;
+	return invisibleBlockMaterials;
     }
     
-    @SuppressWarnings("deprecation")
     public static Sign getTargetSign(Player player) {
 	// get targeted block
-	Block block = player.getTargetBlock(getInvisibleBlocks(), 8);
+	Block block = player.getTargetBlock(getInvisibleMaterials(), 8);
 	
 	// check if block is a wooden sign,
 	// return null otherwise
@@ -111,17 +112,17 @@ public class PlotControl {
 	}
     }
     
-    public Set<String> getPotentialHomeless(World world, Set<String> names) {
-	HashSet<String> result = new HashSet<String>();
-	if (!names.isEmpty()) {
+    public Set<UUID> getPotentialHomeless(World world, Set<UUID> uuids) {
+	HashSet<UUID> result = new HashSet<UUID>();
+	if (!uuids.isEmpty()) {
 	    // region has owners,
 	    // iterate over owners
-	    for (String ownerName : names) {
+	    for (UUID ownerUUID : uuids) {
 		// count regions of owner
-		int ownerRegionCount = getRegionCountOfPlayer(world, ownerName);
+		int ownerRegionCount = getRegionCountOfPlayer(world, ownerUUID);
 		if (ownerRegionCount - 1 == 0) {
 		    // player would become homeless
-		    result.add(ownerName);
+		    result.add(ownerUUID);
 		}
 		
 	    }
@@ -136,14 +137,13 @@ public class PlotControl {
 	// Check if player has too many regions
 	// or special permission
 	//
-	int regionCount = getRegionCountOfPlayer(world.getWorld(), player.getName());
+	int regionCount = getRegionCountOfPlayer(world.getWorld(), player.getUniqueId());
 	int regionMax = world.getConfig().getMaxRegionCount();
 	boolean bypassMax = player.hasPermission(Permission.BYPASSMAX_REGIONS);
 	
 	if (!bypassMax && regionCount >= regionMax) {
 	    throw new PlotControlException("You already own " + regionCount + " regions (max: " + regionMax + ").");
 	}
-	
     }
     
     public void buy(final Player player) throws PlotControlException {
@@ -154,7 +154,7 @@ public class PlotControl {
 	}
 	
 	BlockVector coords = sign.getLocation().toVector().toBlockVector();
-	final PlotWorld plotWorld = this.mgr.getPlotWorld(player.getWorld().getName());
+	final PlotWorld plotWorld = this.mgr.getPlotWorld(player.getWorld());
 	final Plot plot;
 	IPlotSign plotSign = null;
 	
@@ -195,12 +195,12 @@ public class PlotControl {
 	}
 	
 	// already owner?
-	if (region.isOwner(player.getName())) {
+	if (region.isOwner(this.mgr.getWorldGuard().wrapPlayer(player))) {
 	    throw new PlotControlException("You already own this region.");
 	}
 	
 	checkRegionCount(player, plotWorld);
-	int regionCount = getRegionCountOfPlayer(plotWorld.getWorld(), player.getName());
+	int regionCount = getRegionCountOfPlayer(plotWorld.getWorld(), player.getUniqueId());
 	
 	// get region cost
 	final double cost = plot.getSellCost();
@@ -219,16 +219,15 @@ public class PlotControl {
 	// Check if players would become homless after sale.
 	// This is part of preventing cheating with free regions.
 	//
-	final Set<String> owners = region.getOwners().getPlayers();
-	// get members for later
-	final Set<String> members = region.getMembers().getPlayers();
+	
+	final Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
 	
 	if (reserve) {
-	    Set<String> homeless = getPotentialHomeless(plotWorld.getWorld(), owners);
+	    Set<UUID> homeless = getPotentialHomeless(plotWorld.getWorld(), ownerUUIDs);
 	    if (!homeless.isEmpty()) {
 		String homelessString = "";
-		for (String string : homeless) {
-		    homelessString += ", " + string;
+		for (UUID playerUUID : homeless) {
+		    homelessString += ", " + PlayerUUIDConverter.toPlayerName(playerUUID); // convert from uuid to player names
 		}
 		homelessString = homelessString.substring(2);// remove comma and space
 		throw new PlotControlException("Sorry, you can't buy this region. The following players would become homeless: " + homelessString);
@@ -238,7 +237,7 @@ public class PlotControl {
 	// check bypasscost || pay for region
 	
 	final boolean bypassCost = player.hasPermission(Permission.BUY_BYPASSCOST);
-	double balance = this.mgr.getEconomy().getBalance(player.getName());
+	double balance = this.mgr.getEconomy().getBalance(player);
 	if (!bypassCost && cost > balance) {
 	    throw new PlotControlException("You only have " + this.mgr.getEconomy().format(balance) + ". You still require " + this.mgr.getEconomy().format(cost - balance) + ".");
 	}
@@ -254,7 +253,7 @@ public class PlotControl {
 	    protected Prompt onYes() {
 		if (!bypassCost) {
 		    try {
-			PlotControl.this.mgr.getEconomy().withdraw(player.getName(), cost);
+			PlotControl.this.mgr.getEconomy().withdraw(player, cost);
 		    } catch (EconomyException e) {
 			player.sendMessage(ChatColor.RED + e.getMessage());
 			return Prompt.END_OF_CONVERSATION;
@@ -267,11 +266,11 @@ public class PlotControl {
 		// TAX BEGIN
 		// --------------------
 		
-		String taxAccount = plotWorld.getConfig().getTaxAccount();
+		UUID taxAccount = plotWorld.getConfig().getTaxAccountHolder();
 		double percentageTax = plotWorld.getConfig().getTaxPercent();
 		double percentage = 0;
+		
 		if (cost >= plotWorld.getConfig().getTaxFromPrice()) {
-		    
 		    percentage = percentageTax * cost / 100;
 		    share -= percentage;
 		    PlotControl.this.mgr.getEconomy().deposit(taxAccount, percentage);
@@ -282,9 +281,9 @@ public class PlotControl {
 		// --------------------
 		
 		// calc share and pay owners their share
-		share = share / Math.max(1, owners.size());
-		for (String ownerName : owners) {
-		    PlotControl.this.mgr.getEconomy().deposit(ownerName, share);
+		share = share / Math.max(1, ownerUUIDs.size());
+		for (UUID ownerUUID : ownerUUIDs) {
+		    PlotControl.this.mgr.getEconomy().deposit(ownerUUID, share);
 		}
 		
 		// remove owners, add buyer as owner
@@ -311,7 +310,7 @@ public class PlotControl {
 		if (!plot.delete()) {
 		    plot.save();
 		}
-		PlotControl.this.mgr.messages.bought(plot.getRegionId(), player, cost, owners, members, share, taxAccount, percentage);
+		PlotControl.this.mgr.messages.bought(plot.getRegionId(), player, cost, ownerUUIDs, region.getMembers().getUniqueIds(), share, taxAccount.toString(), percentage);
 		return Prompt.END_OF_CONVERSATION;
 	    }
 	    
@@ -340,7 +339,7 @@ public class PlotControl {
 	}
 	
 	BlockVector coords = sign.getLocation().toVector().toBlockVector();
-	final PlotWorld plotWorld = this.mgr.getPlotWorld(player.getWorld().getName());
+	final PlotWorld plotWorld = this.mgr.getPlotWorld(player.getWorld());
 	final Plot plot;
 	IPlotSign plotSign = null;
 	
@@ -388,10 +387,11 @@ public class PlotControl {
 	ForRentSign rentSign = (ForRentSign) plotSign;
 	
 	final long remainingTime = rentSign.getRentPlayerTime();
+	
 	// already member?
-	if (region.isMember(player.getName())) {
+	if (region.isMember(this.mgr.getWorldGuard().wrapPlayer(player))) {
 	    if (rentSign.isRentedOut()) {
-		if (!player.getName().equals(rentSign.getRentPlayer())) {
+		if (!player.getUniqueId().equals(rentSign.getRentPlayerUUID())) {
 		    // can't extend time via this sign
 		    throw new PlotControlException("You're already member of this region. And you can't extend your rent time via this sign.");
 		} else {
@@ -402,22 +402,19 @@ public class PlotControl {
 		    
 		    // check if it's too soon
 		    if (remainingTime > allowExtendAtRemaining) {
-			
 			// too soon to extend rent time
 			throw new PlotControlException("You can't extend the rent time yet. You have to wait " + new TimeStringConverter().convert(remainingTime - allowExtendAtRemaining) + ".");
-			
 		    }
 		}
 	    } else {
 		throw new PlotControlException("You're already member of this region.");
 	    }
-	    
 	}
 	
 	// get owners for later
-	final Set<String> owners = region.getOwners().getPlayers();
+	final Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
 	// get members for later
-	final Set<String> members = region.getMembers().getPlayers();
+	final Set<UUID> memberUUIDs = region.getMembers().getUniqueIds();
 	
 	// get rent cost and time
 	final double cost = plot.getRentCost();
@@ -426,7 +423,7 @@ public class PlotControl {
 	// check bypasscost || pay for region
 	
 	final boolean bypassCost = player.hasPermission(Permission.RENT_BYPASSCOST);
-	double balance = this.mgr.getEconomy().getBalance(player.getName());
+	double balance = this.mgr.getEconomy().getBalance(player);
 	if (!bypassCost && cost > balance) {
 	    throw new PlotControlException("You only have " + this.mgr.getEconomy().format(balance) + ". You still require " + this.mgr.getEconomy().format(cost - balance) + ".");
 	}
@@ -438,7 +435,7 @@ public class PlotControl {
 	    protected Prompt onYes() {
 		if (!bypassCost) {
 		    try {
-			PlotControl.this.mgr.getEconomy().withdraw(player.getName(), cost);
+			PlotControl.this.mgr.getEconomy().withdraw(player, cost);
 		    } catch (EconomyException e) {
 			player.sendMessage(ChatColor.RED + e.getMessage());
 			return Prompt.END_OF_CONVERSATION;
@@ -450,9 +447,9 @@ public class PlotControl {
 		// no tax for renting out
 		
 		// calc share and pay owners their share
-		share = share / Math.max(1, owners.size());
-		for (String ownerName : owners) {
-		    PlotControl.this.mgr.getEconomy().deposit(ownerName, share);
+		share = share / Math.max(1, ownerUUIDs.size());
+		for (UUID ownerUUID : ownerUUIDs) {
+		    PlotControl.this.mgr.getEconomy().deposit(ownerUUID, share);
 		}
 		
 		// add renter as member
@@ -469,12 +466,12 @@ public class PlotControl {
 		// put player's name on the sign...
 		// put rent time on the sign
 		ForRentSign newPlotSign = new ForRentSign(plot, sign.getLocation().toVector().toBlockVector());
-		newPlotSign.setRentPlayer(player.getName());
+		newPlotSign.setRentPlayer(player);
 		newPlotSign.setRentPlayerTime(remainingTime + plot.getRentTime());
 		plot.setSign(newPlotSign);
 		plot.save();
 		
-		ForRentSignText rentText = new ForRentSignText(plotWorld, region.getId(), newPlotSign.getRentPlayer(), newPlotSign.getRentPlayerTime());
+		ForRentSignText rentText = new ForRentSignText(plotWorld, region.getId(), newPlotSign.getRentPlayerUUID(), newPlotSign.getRentPlayerTime());
 		rentText.applyToSign(sign);
 		
 		// the time on the sign will update using a timer
@@ -482,9 +479,9 @@ public class PlotControl {
 		
 		if (remainingTime > 0) {
 		    String newTimeString = new TimeStringConverter().convert(remainingTime + plot.getRentTime());
-		    PlotControl.this.mgr.messages.rented(player, owners, members, plot.getRegionId(), cost, newTimeString);
+		    PlotControl.this.mgr.messages.rented(player, ownerUUIDs, memberUUIDs, plot.getRegionId(), cost, newTimeString);
 		} else {
-		    PlotControl.this.mgr.messages.rented(player, owners, members, plot.getRegionId(), cost, timeString);
+		    PlotControl.this.mgr.messages.rented(player, ownerUUIDs, memberUUIDs, plot.getRegionId(), cost, timeString);
 		}
 		return Prompt.END_OF_CONVERSATION;
 	    }
@@ -603,9 +600,7 @@ public class PlotControl {
 	if (!allowOverlap && overlapsUnownedRegion(region, plotWorld.getWorld(), player)) {
 	    // overlapping is not allowed
 	    throw new PlotControlException("Your selection overlaps with someone else's region.");
-	}
-	
-	else {
+	} else {
 	    // not overlapping or it's allowed to overlap
 	    
 	    boolean doAutomaticParent = plotWorld.getConfig().isAutomaticParentEnabled();
@@ -640,7 +635,7 @@ public class PlotControl {
 	// get player's selection
 	Selection sel = getSelection(player);
 	// get plot-world information
-	PlotWorld plotWorld = this.mgr.getPlotWorld(sel.getWorld().getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(sel.getWorld());
 	
 	// define, using default bottom y and top y
 	define(player, regionId, plotWorld.getConfig().getDefaultBottomY(), plotWorld.getConfig().getDefaultTopY());
@@ -658,7 +653,7 @@ public class PlotControl {
 	// get player's selection
 	Selection sel = getSelection(player);
 	// get plot-world information
-	final PlotWorld plotWorld = this.mgr.getPlotWorld(sel.getWorld().getName());
+	final PlotWorld plotWorld = this.mgr.getPlotWorld(sel.getWorld());
 	
 	// get world's RegionManager of WorldGuard
 	final RegionManager regionManager = plotWorld.getRegionManager();
@@ -679,13 +674,13 @@ public class PlotControl {
 	// calculate cost
 	final double cost = getWorth(region, plotWorld.getConfig().getBlockWorth());
 	// check balance
-	double balance = this.mgr.getEconomy().getBalance(player.getName());
+	double balance = this.mgr.getEconomy().getBalance(player);
 	if (enableCost && balance < cost) {
 	    throw new PlotControlException(ChatColor.RED + "You can't afford to create region " + ChatColor.WHITE + regionId + ChatColor.RED + ". You only have " + ChatColor.WHITE + this.mgr.getEconomy().format(balance) + ChatColor.RED + ", but it costs " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.RED + ".");
 	}
 	
 	// get default owners from config
-	List<String> ownerList = plotWorld.getConfig().getDefaultOwners();
+	List<UUID> ownerUUIDList = plotWorld.getConfig().getDefaultOwnerUUIDs();
 	// who will be the region owner?
 	final DefaultDomain ownersDomain = new DefaultDomain();
 	// let's create the prompt first
@@ -704,7 +699,7 @@ public class PlotControl {
 		// pay money
 		if (enableCost) {
 		    try {
-			PlotControl.this.mgr.getEconomy().withdraw(player.getName(), cost);
+			PlotControl.this.mgr.getEconomy().withdraw(player, cost);
 		    } catch (EconomyException e) {
 			player.sendMessage(ChatColor.RED + "Failed to pay for the region: " + e.getMessage());
 			return Prompt.END_OF_CONVERSATION;
@@ -738,7 +733,7 @@ public class PlotControl {
 	if (enableCost) {
 	    // cost is enabled, player will be owner
 	    checkRegionCount(player, plotWorld);
-	    ownersDomain.addPlayer(player.getName());
+	    ownersDomain.addPlayer(player.getUniqueId());
 	    // ask question
 	    player.sendMessage(ChatColor.GREEN + "Are you sure you want to pay " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + ", ");
 	    player.sendMessage(ChatColor.GREEN + "and create region '" + ChatColor.WHITE + region.getId() + ChatColor.GREEN + "?");
@@ -749,15 +744,16 @@ public class PlotControl {
 	} else {
 	    // cost is not enabled
 	    // who will be owner depends on config
-	    if (ownerList == null || ownerList.size() < 1) {
+	    if (ownerUUIDList == null || ownerUUIDList.isEmpty()) {
 		// no owners in config, owner is player
 		checkRegionCount(player, plotWorld);
-		ownersDomain.addPlayer(player.getName());
+		ownersDomain.addPlayer(player.getUniqueId());
 	    } else {
 		// owners are in config
 		// owners from cronfig will be owners
-		for (Object ownerName : ownerList) {
-		    ownersDomain.addPlayer(ownerName.toString().trim());
+		
+		for (UUID ownerUUID : ownerUUIDList) {
+		    ownersDomain.addPlayer(ownerUUID);
 		}
 	    }
 	    // save
@@ -766,7 +762,7 @@ public class PlotControl {
     }
     
     public void redefine(Player player, String regionId) throws PlotControlException {
-	PlotWorld plotWorld = this.mgr.getPlotWorld(player.getWorld().getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(player.getWorld());
 	redefine(player, regionId, plotWorld.getConfig().getDefaultBottomY(), plotWorld.getConfig().getDefaultTopY());
     }
     
@@ -782,14 +778,14 @@ public class PlotControl {
 	// get player's selection
 	Selection sel = getSelection(player);
 	// get plot-world information
-	PlotWorld plotWorld = this.mgr.getPlotWorld(sel.getWorld().getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(sel.getWorld());
 	
 	final RegionManager regionManager = plotWorld.getRegionManager();
 	ProtectedRegion region = regionManager.getRegion(regionId);
 	
 	if (region == null) {
 	    throw new PlotControlException("Region \"" + regionId + "\" doesn't exist.");
-	} else if (!region.isOwner(player.getName()) && !player.hasPermission(Permission.REDEFINE_ANYREGION)) {
+	} else if (!region.isOwner(this.mgr.getWorldGuard().wrapPlayer(player)) && !player.hasPermission(Permission.REDEFINE_ANYREGION)) {
 	    // must be owner
 	    throw new PlotControlException("You can only redefine your own regions.");
 	}
@@ -813,7 +809,7 @@ public class PlotControl {
 	// calculate cost. refund if < 0
 	final double cost = newWorth - oldWorth;
 	// get owners
-	final Set<String> ownerList = region.getOwners().getPlayers();
+	final Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
 	
 	// cost must be configured and bypass must not be permitted
 	final boolean enableCost = plotWorld.getConfig().isCreateCostEnabled() && cost != 0 && !player.hasPermission(Permission.CREATE_BYPASSCOST);
@@ -826,7 +822,7 @@ public class PlotControl {
 	    
 	    if (enableCost) {
 		// check balance
-		double balance = this.mgr.getEconomy().getBalance(player.getName());
+		double balance = this.mgr.getEconomy().getBalance(player);
 		if (balance < cost) {
 		    throw new PlotControlException(ChatColor.RED + "You can't afford to resize region " + ChatColor.WHITE + regionId + ChatColor.RED + "' from " + ChatColor.RED + oldWidth + "x" + oldLength + "x" + oldHeight + ChatColor.RED + " to " + ChatColor.WHITE + newWidth + "x" + newLength + "x" + newHeight + ChatColor.RED + ". You only have " + ChatColor.WHITE + this.mgr.getEconomy().format(balance) + ChatColor.RED + ", but it costs " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.RED + ".");
 		}
@@ -846,8 +842,8 @@ public class PlotControl {
 		// get comma seperated string of owner names
 		// like: bob, john, hank
 		String ownerNames = "";
-		for (String name : ownerList) {
-		    ownerNames += ", " + name;
+		for (UUID ownerUUID : ownerUUIDs) {
+		    ownerNames += ", " + PlayerUUIDConverter.toPlayerName(ownerUUID);
 		}
 		if (ownerNames.isEmpty()) {
 		    ownerNames = "nobody";
@@ -873,15 +869,15 @@ public class PlotControl {
 		    try {
 			if (cost > 0) {
 			    // larger region, cost money
-			    PlotControl.this.mgr.getEconomy().withdraw(player.getName(), Math.abs(cost));
+			    PlotControl.this.mgr.getEconomy().withdraw(player, Math.abs(cost));
 			} else {
 			    // smaller region, refunds money to the owners
 			    
 			    // calculate share
-			    double share = Math.abs(cost) / Math.max(1, ownerList.size());
+			    double share = Math.abs(cost) / Math.max(1, ownerUUIDs.size());
 			    // refund equal share to owners
-			    for (String name : ownerList) {
-				PlotControl.this.mgr.getEconomy().deposit(name, share);
+			    for (UUID ownerUUID : ownerUUIDs) {
+				PlotControl.this.mgr.getEconomy().deposit(ownerUUID, share);
 			    }
 			    
 			}
@@ -898,7 +894,7 @@ public class PlotControl {
 		    regionManager.save();
 		    
 		    // send info to the player and owners and members
-		    PlotControl.this.mgr.messages.resized(player, regionNew.getOwners().getPlayers(), regionNew.getMembers().getPlayers(), regionId, (enableCost ? oldWorth : 0), (enableCost ? newWorth : 0), oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
+		    PlotControl.this.mgr.messages.resized(player.getUniqueId(), regionNew.getOwners().getUniqueIds(), regionNew.getMembers().getUniqueIds(), regionId, (enableCost ? oldWorth : 0), (enableCost ? newWorth : 0), oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
 		    
 		} catch (StorageException e) {
 		    // i think your server has bigger problems
@@ -921,11 +917,10 @@ public class PlotControl {
 	// run YesNoPrompt
 	//
 	new ConversationFactory(this.mgr.getPlugin()).withLocalEcho(false).withModality(false).withFirstPrompt(prompt).buildConversation(player).begin();
-	
     }
     
     public void delete(final CommandSender player, World world, String regionId) throws PlotControlException {
-	final PlotWorld plotWorld = this.mgr.getPlotWorld(world.getName());
+	final PlotWorld plotWorld = this.mgr.getPlotWorld(world);
 	// doesn't exist?
 	final Plot plot = plotWorld.getPlot(regionId);
 	if (plot == null) {
@@ -942,12 +937,12 @@ public class PlotControl {
 	    // get another free region, delete it.. etc
 	    
 	    if (region != null) {
-		Set<String> owners = region.getOwners().getPlayers();
-		Set<String> homeless = getPotentialHomeless(world, owners);
-		if (!homeless.isEmpty()) {
+		Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
+		Set<UUID> homelessUUIDs = getPotentialHomeless(world, ownerUUIDs);
+		if (!homelessUUIDs.isEmpty()) {
 		    String homelessString = "";
-		    for (String string : homeless) {
-			homelessString += ", " + string;
+		    for (UUID homelessUUID : homelessUUIDs) {
+			homelessString += ", " + PlayerUUIDConverter.toPlayerName(homelessUUID);
 		    }
 		    homelessString = homelessString.substring(2);// remove comma and space
 		    throw new PlotControlException("Sorry, you can't delete this region. The following players would become homeless: " + homelessString);
@@ -962,26 +957,27 @@ public class PlotControl {
 	    throw new PlotControlException("You can't delete this region when players are still renting it.");
 	}
 	
-	Set<String> ownerList;
+	Set<UUID> ownerUUIDs;
 	if (region != null) {
-	    ownerList = region.getOwners().getPlayers();
+	    ownerUUIDs = region.getOwners().getUniqueIds();
 	} else {
 	    // avoid null pointer errors
-	    ownerList = new HashSet<String>();
+	    ownerUUIDs = new HashSet<UUID>();
 	}
+	
 	final double refund;
 	final double share;
 	if (costEnabled) {
 	    // calculate percentage of total worth
 	    refund = plotWorld.getConfig().getDeleteRefundPercent() * plot.getWorth() / 100;
 	    // calculate how much each owner gets
-	    share = refund / Math.max(1, ownerList.size());
+	    share = refund / Math.max(1, ownerUUIDs.size());
 	    
 	    // console will not get this message
 	    if (player instanceof Player) {
 		String nameString = "";
-		for (String name : ownerList) {
-		    nameString += ", " + name;
+		for (UUID ownerUUID : ownerUUIDs) {
+		    nameString += ", " + PlayerUUIDConverter.toPlayerName(ownerUUID);
 		}
 		if (!nameString.isEmpty()) {
 		    nameString = nameString.substring(2);
@@ -1003,7 +999,6 @@ public class PlotControl {
 		// send normal message
 		player.sendMessage(ChatColor.GREEN + "Are you sure you want to delete region '" + ChatColor.WHITE + regionId + ChatColor.GREEN + "'?");
 	    }
-	    
 	}
 	
 	//
@@ -1018,18 +1013,18 @@ public class PlotControl {
 		} else {
 		    try {
 			RegionManager regionManager = plotWorld.getRegionManager();
-			Set<String> owners;
-			Set<String> members;
+			Set<UUID> ownerUUIDs;
+			Set<UUID> memberUUIDs;
 			if (region != null) {
 			    regionManager.removeRegion(plot.getRegionId());
 			    regionManager.save();
 			    
-			    owners = region.getOwners().getPlayers();
-			    members = region.getMembers().getPlayers();
+			    ownerUUIDs = region.getOwners().getUniqueIds();
+			    memberUUIDs = region.getMembers().getUniqueIds();
 			} else {
 			    // avoid null pointer errors
-			    owners = new HashSet<String>();
-			    members = new HashSet<String>();
+			    ownerUUIDs = new HashSet<UUID>();
+			    memberUUIDs = new HashSet<UUID>();
 			}
 			
 			// break all for sale signs
@@ -1041,12 +1036,12 @@ public class PlotControl {
 			
 			// refund, now we know it's deleted
 			if (costEnabled) {
-			    for (String name : owners) {
-				PlotControl.this.mgr.getEconomy().deposit(name, share);
+			    for (UUID ownerUUID : ownerUUIDs) {
+				PlotControl.this.mgr.getEconomy().deposit(ownerUUID, share);
 			    }
 			}
 			// send messages to everyone involved
-			PlotControl.this.mgr.messages.removed(player, owners, members, plot.getRegionId(), refund);
+			PlotControl.this.mgr.messages.removed(player, ownerUUIDs, memberUUIDs, plot.getRegionId(), refund);
 			
 		    } catch (StorageException e) {
 			player.sendMessage(ChatColor.RED + "Failed to delete region with id \"" + plot.getRegionId() + "\": " + e.getMessage());
@@ -1073,21 +1068,20 @@ public class PlotControl {
     }
     
     public void sendRegionCount(CommandSender sender, OfflinePlayer owner, World world) {
-	int count = getRegionCountOfPlayer(world, owner.getName());
+	int count = getRegionCountOfPlayer(world, owner.getUniqueId());
 	
 	String countString = String.valueOf(count);
-	if (count < this.mgr.getPlotWorld(world.getName()).getConfig().getMaxRegionCount()) {
+	if (count < this.mgr.getPlotWorld(world).getConfig().getMaxRegionCount()) {
 	    countString = ChatColor.WHITE + countString;
 	} else {
 	    countString = ChatColor.RED + countString;
 	}
 	
 	sender.sendMessage(ChatColor.GREEN + "Player " + ChatColor.WHITE + "'" + owner.getName() + "'" + ChatColor.GREEN + " owns " + countString + ChatColor.GREEN + " regions in world " + ChatColor.WHITE + "'" + world.getName() + "'" + ChatColor.GREEN + ".");
-	
     }
     
     public void sendWorth(CommandSender sender, String regionId, World world) {
-	PlotWorld plotWorld = this.mgr.getPlotWorld(world.getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(world);
 	RegionManager regionManager = plotWorld.getRegionManager();
 	ProtectedRegion region = regionManager.getRegion(regionId);
 	if (region == null) {
@@ -1103,14 +1097,14 @@ public class PlotControl {
     }
     
     public void sendWorth(CommandSender sender, int width, int length, World world) {
-	PlotWorld plotWorld = this.mgr.getPlotWorld(world.getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(world);
 	double cost = getWorth(width, length, plotWorld.getConfig().getBlockWorth());
 	sender.sendMessage(ChatColor.GREEN + "For a region with a size of " + ChatColor.WHITE + String.valueOf(width) + "x" + String.valueOf(length) + ChatColor.GREEN + " blocks, in world \"" + world.getName() + "\" ");
 	sender.sendMessage(ChatColor.GREEN + "you would pay about " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + ".");
     }
     
     public void sendWorth(CommandSender sender, double money, World world) {
-	PlotWorld plotWorld = this.mgr.getPlotWorld(world.getName());
+	PlotWorld plotWorld = this.mgr.getPlotWorld(world);
 	int size = getSizeByWorth(money, plotWorld.getConfig().getBlockWorth());
 	sender.sendMessage(ChatColor.GREEN + "For " + ChatColor.WHITE + this.mgr.getEconomy().format(money) + ChatColor.GREEN + ", ");
 	sender.sendMessage(ChatColor.GREEN + "you can get a region with a size of about " + ChatColor.WHITE + String.valueOf(size) + "x" + String.valueOf(size) + ChatColor.GREEN + " blocks, in world \"" + world.getName() + "\".");
@@ -1161,7 +1155,7 @@ public class PlotControl {
 	
 	// find regions that are cuboid, and owned by the player
 	for (ProtectedRegion element : regions) {
-	    if (!element.getTypeName().equalsIgnoreCase("cuboid")) {
+	    if (element.getType() != RegionType.CUBOID) {
 		continue;
 	    }
 	    if (!element.isOwner(localPlayer)) {

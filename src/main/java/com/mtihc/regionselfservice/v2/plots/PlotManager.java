@@ -12,7 +12,6 @@ import org.bukkit.World;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.mtihc.regionselfservice.v2.plots.signs.ForRentSign;
@@ -61,17 +60,15 @@ public abstract class PlotManager {
 	this.worlds = new HashMap<UUID, PlotWorld>();
 	this.control = new PlotControl(this);
 	
-	Listener listener = new PlotListener(this);
-	Bukkit.getPluginManager().registerEvents(listener, plugin);
+	Bukkit.getPluginManager().registerEvents(new PlotListener(this), plugin);
 	
 	Runnable rentTimer = new Runnable() {
 	    
 	    @Override
 	    public void run() {
-		Collection<PlotWorld> plotWorlds = PlotManager.this.worlds.values();
 		
 		// iterate over all PlotWorlds
-		for (PlotWorld plotWorld : plotWorlds) {
+		for (PlotWorld plotWorld : getPlotWorlds()) {
 		    boolean requireSave = false;
 		    Collection<PlotData> plots = plotWorld.getPlotData().getValues();
 		    
@@ -117,7 +114,6 @@ public abstract class PlotManager {
 				
 				// remove player name from sign
 				rentSign.setRentPlayer(null);
-				
 			    } else {
 				if (newTime <= ((Plot) plot).getRentTimeExtendAllowedAt()) {
 				    // TODO move code to messages.rent_extend_warning method
@@ -150,7 +146,8 @@ public abstract class PlotManager {
 		}
 	    }
 	};
-	Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, rentTimer, 0, 60 * 20);
+	
+	Bukkit.getScheduler().runTaskTimer(plugin, rentTimer, 0L, 60 * 20L); // scheduleSyncRepeatingTask(plugin, rentTimer, 0, 60 * 20);
     }
     
     public IPlotWorldConfig getDefaultWorldConfig() {
