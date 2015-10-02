@@ -1,13 +1,15 @@
 package com.mtihc.regionselfservice.v2.plots.signs;
 
 import java.util.Map;
+import java.util.UUID;
 
+import org.bukkit.entity.Player;
 import org.bukkit.util.BlockVector;
 
 
 public class ForRentSignData extends PlotSignData {
     
-    private String rentPlayer;
+    private UUID rentPlayer;
     private long rentPlayerTime;
     
     public ForRentSignData(ForRentSignData other) {
@@ -23,15 +25,13 @@ public class ForRentSignData extends PlotSignData {
 	this.rentPlayerTime = 0;
     }
     
+    @Deprecated
     public ForRentSignData(Map<String, Object> values) {
 	super(values);
-	this.rentPlayer = (String) values.get("rent-player");
+	this.rentPlayer = (UUID) values.get("rent-player");
 	this.rentPlayerTime = (Integer) values.get("rent-player-time");
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.PlotSignData#serialize()
-     */
     @Override
     public Map<String, Object> serialize() {
 	Map<String, Object> values = super.serialize();
@@ -40,12 +40,12 @@ public class ForRentSignData extends PlotSignData {
 	return values;
     }
     
-    public String getRentPlayer() {
+    public UUID getRentPlayerUUID() {
 	return this.rentPlayer;
     }
     
-    public void setRentPlayer(String playerName) {
-	this.rentPlayer = playerName;
+    public void setRentPlayer(Player player) {
+	this.rentPlayer = player.getUniqueId();
     }
     
     public long getRentPlayerTime() {
@@ -59,5 +59,4 @@ public class ForRentSignData extends PlotSignData {
     public boolean isRentedOut() {
 	return this.rentPlayer != null;
     }
-    
 }

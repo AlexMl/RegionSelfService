@@ -1,6 +1,10 @@
 package com.mtihc.regionselfservice.v2.plots.signs;
 
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Player;
 import org.bukkit.event.block.SignChangeEvent;
 
 import com.mtihc.regionselfservice.v2.plots.IPlotSignData;
@@ -123,10 +127,12 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	if (this.type == null) {
 	    throw new SignException("Not a valid plot sign. Could not find the matching sign type.");
 	}
+	
 	this.regionId = getRegionId(lines);
 	if (this.regionId == null) {
 	    throw new SignException("Region name is not specified on lines 3 and/or 4.");
 	}
+	
 	Plot plot = plotWorld.getPlot(this.regionId);
 	if (plot == null || plot.getRegion() == null) {
 	    throw new SignException("Region '" + this.regionId + "' does not exist.");
@@ -240,7 +246,6 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	public void applyToSign(String[] lines) {
 	    setSellCost(lines, getSellCost());
 	}
-	
     }
     
     //
@@ -267,18 +272,20 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	    lines[1] = costString + separator + timeString;
 	}
 	
-	public static void setRentPlayerTime(String[] lines, String playerName, long millisec) {
+	public static void setRentPlayerTime(String[] lines, UUID playerUUID, long millisec) {
 	    // convert time to string, like 1d23h59m
 	    String timeString = new TimeStringConverter().convert(millisec);
 	    
 	    // set the text on the correct line,
 	    // use the player name, instead of cost.
-	    lines[1] = playerName + separator + timeString;
+	    
+	    // INFO: playerUUID on sign line 2. playerName may be required
+	    lines[1] = playerUUID + separator + timeString;
 	}
 	
 	private double rentCost;
 	private long rentTime;
-	private String rentPlayer;
+	private UUID rentPlayerUUID;
 	private long rentPlayerTime;
 	
 	public ForRentSignText(PlotWorld plotWorld, String regionId) {
@@ -287,9 +294,9 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	    this.rentTime = getPlot().getRentTime();
 	}
 	
-	public ForRentSignText(PlotWorld plotWorld, String regionId, String rentPlayer, long rentPlayerTime) {
+	public ForRentSignText(PlotWorld plotWorld, String regionId, UUID rentPlayerUUID, long rentPlayerTime) {
 	    this(plotWorld, regionId);
-	    this.rentPlayer = rentPlayer;
+	    this.rentPlayerUUID = rentPlayerUUID;
 	    this.rentPlayerTime = rentPlayerTime;
 	}
 	
@@ -320,11 +327,11 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 		// use old rent time
 		time = plot.getRentTime();
 	    }
+	    
 	    // get cost or player name
-	    String costOrPlayer;
 	    try {
 		// get text before separator
-		costOrPlayer = lines[1].split(separator)[0].trim();
+		String costOrPlayer = lines[1].split(separator)[0].trim();
 		
 		try {
 		    // try to convert text to number
@@ -334,7 +341,8 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 		    this.rentTime = time;
 		} catch (NumberFormatException e) {
 		    // converting failed, this must be a player name
-		    this.rentPlayer = costOrPlayer;
+		    // INFO look at signs
+		    this.rentPlayerUUID = Bukkit.getOfflinePlayer(costOrPlayer).getUniqueId();
 		    // so the time must be the remaining rent time for the player
 		    this.rentPlayerTime = time;
 		}
@@ -352,7 +360,7 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	 * @return whether the region is rented via the sign
 	 */
 	public boolean isRentedOut() {
-	    return this.rentPlayer != null;
+	    return this.rentPlayerUUID != null;
 	}
 	
 	/**
@@ -382,16 +390,16 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	}
 	
 	/**
-	 * The player that rented the region via this sign. Only defined when rented out.
+	 * The player UUID that rented the region via this sign. Only defined when rented out.
 	 * 
 	 * @return the renter's name
 	 */
-	public String getRentPlayer() {
-	    return this.rentPlayer;
+	public UUID getRentPlayerUUID() {
+	    return this.rentPlayerUUID;
 	}
 	
-	public void setRentPlayer(String value) {
-	    this.rentPlayer = value;
+	public void setRentPlayer(Player player) {
+	    this.rentPlayerUUID = player.getUniqueId();
 	}
 	
 	/**
@@ -410,7 +418,7 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	@Override
 	public void applyToSign(String[] lines) {
 	    if (isRentedOut()) {
-		setRentPlayerTime(lines, getRentPlayer(), getRentPlayerTime());
+		setRentPlayerTime(lines, getRentPlayerUUID(), getRentPlayerTime());
 	    } else {
 		setRentCost(lines, getRentCost(), getRentTime());
 	    }
