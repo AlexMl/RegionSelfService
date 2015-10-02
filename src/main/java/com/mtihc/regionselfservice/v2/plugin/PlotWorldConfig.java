@@ -1,8 +1,12 @@
 package com.mtihc.regionselfservice.v2.plugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Logger;
+
+import org.bukkit.Bukkit;
 
 import com.mtihc.regionselfservice.v2.plots.IPlotWorldConfig;
 import com.mtihc.regionselfservice.v2.plugin.util.YamlFile;
@@ -162,8 +166,14 @@ public class PlotWorldConfig extends YamlFile implements IPlotWorldConfig {
     }
     
     @Override
-    public List<String> getDefaultOwners() {
-	return getConfig().getStringList("region_defaults.owners");
+    @SuppressWarnings("deprecation")
+    public List<UUID> getDefaultOwnerUUIDs() {
+	List<UUID> ownerUUIDs = new ArrayList<UUID>();
+	
+	for (String ownerName : getConfig().getStringList("region_defaults.owners")) {
+	    ownerUUIDs.add(Bukkit.getOfflinePlayer(ownerName).getUniqueId());
+	}
+	return ownerUUIDs;
     }
     
     public void setDefaultOwners(List<String> owners) {
@@ -198,12 +208,9 @@ public class PlotWorldConfig extends YamlFile implements IPlotWorldConfig {
     }
     
     @Override
-    public String getTaxAccount() {
-	return getConfig().getString("tax_to_account");
-    }
-    
-    public void setTaxAccount(String name) {
-	getConfig().set("tax_to_account", name);
+    @SuppressWarnings("deprecation")
+    public UUID getTaxAccountHolder() {
+	return Bukkit.getOfflinePlayer(getConfig().getString("tax_to_account")).getUniqueId();
     }
     
     @Override
