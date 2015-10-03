@@ -145,8 +145,8 @@ class PlotListener implements Listener {
 	    double maxRentCost = plot.getWorth(config.getOnRentMaxBlockCost());
 	    // interpret the min/max rent cost as "rent cost per hour"
 	    // convert them to min/max rent cost as "rent cost per rentTime"
-	    double maxRentCostConverted = maxRentCost * (rentTime / 3600000.0);
-	    double minRentCostConverted = minRentCost * (rentTime / 3600000.0);
+	    double maxRentCostConverted = maxRentCost * (rentTime / (1000.0 * 60.0 * 60.0)); // milliseconds -> hours
+	    double minRentCostConverted = minRentCost * (rentTime / (1000.0 * 60.0 * 60.0));
 	    
 	    if (rentCost < minRentCostConverted) {
 		player.sendMessage(ChatColor.RED + "The price is too low.");
