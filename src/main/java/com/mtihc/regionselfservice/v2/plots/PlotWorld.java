@@ -2,6 +2,7 @@ package com.mtihc.regionselfservice.v2.plots;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -15,14 +16,14 @@ import com.sk89q.worldguard.protection.managers.RegionManager;
 public class PlotWorld {
     
     protected final PlotManager manager;
-    protected final String worldName;
+    protected final UUID worldUID;
     protected final IPlotWorldConfig config;
     protected final IPlotDataRepository plots;
     protected final RegionManager regionManager;
     
     public PlotWorld(PlotManager manager, World world, IPlotWorldConfig config, IPlotDataRepository plots) {
 	this.manager = manager;
-	this.worldName = world.getName();
+	this.worldUID = world.getUID();
 	this.config = config;
 	this.plots = plots;
 	
@@ -30,11 +31,15 @@ public class PlotWorld {
     }
     
     public String getName() {
-	return this.worldName;
+	return getWorld().getName();
+    }
+    
+    public UUID getWorldUID() {
+	return this.worldUID;
     }
     
     public World getWorld() {
-	return Bukkit.getWorld(this.worldName);
+	return Bukkit.getWorld(getWorldUID());
     }
     
     public IPlotWorldConfig getConfig() {
@@ -70,13 +75,18 @@ public class PlotWorld {
 	return this.regionManager;
     }
     
-    public Set<String> getPotentialHomeless(Set<String> names) {
-	Set<String> result = new HashSet<String>();
-	World world = getWorld();
-	for (String name : names) {
-	    int count = this.manager.control.getRegionCountOfPlayer(world, name);
-	    if (count - 1 <= 0) {
-		result.add(name);
+    public Set<UUID> getPotentialHomeless(Set<UUID> playerUUIDs) {
+	Set<UUID> result = new HashSet<UUID>();
+	
+	// iterate over regions owners
+	if (!playerUUIDs.isEmpty()) {
+	    for (UUID playerUUID : playerUUIDs) {
+		// count regions of owner
+		int count = this.manager.control.getRegionCountOfPlayer(getWorld(), playerUUID);
+		if (count < 2) {
+		    // player only has 1 region -> would get homeless if he sells it
+		    result.add(playerUUID);
+		}
 	    }
 	}
 	return result;

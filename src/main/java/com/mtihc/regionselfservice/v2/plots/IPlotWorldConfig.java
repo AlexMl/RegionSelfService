@@ -1,6 +1,7 @@
 package com.mtihc.regionselfservice.v2.plots;
 
 import java.util.List;
+import java.util.UUID;
 
 
 public interface IPlotWorldConfig {
@@ -35,7 +36,7 @@ public interface IPlotWorldConfig {
     
     public abstract int getDefaultTopY();
     
-    public abstract List<String> getDefaultOwners();
+    public abstract List<UUID> getDefaultOwnerUUIDs();
     
     public abstract boolean isOverlapUnownedRegionAllowed();
     
@@ -43,7 +44,7 @@ public interface IPlotWorldConfig {
     
     public abstract boolean isCreateCostEnabled();
     
-    public abstract String getTaxAccount();
+    public abstract UUID getTaxAccountHolder();
     
     public abstract double getTaxPercent();
     

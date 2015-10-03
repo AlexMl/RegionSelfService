@@ -24,9 +24,7 @@ abstract class PlotSignData implements IPlotSignData {
     
     protected PlotSignData(Map<String, Object> values) {
 	this.coords = (BlockVector) values.get("coords");
-	
-	String typeName = (String) values.get("sign-type");
-	this.type = PlotSignType.valueOf(typeName);
+	this.type = PlotSignType.valueOf((String) values.get("sign-type"));
     }
     
     @Override
@@ -37,25 +35,16 @@ abstract class PlotSignData implements IPlotSignData {
 	return values;
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.signs.IPlotSignData#getBlockVector()
-     */
     @Override
     public BlockVector getBlockVector() {
 	return this.coords.clone();
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.signs.IPlotSignData#getType()
-     */
     @Override
     public PlotSignType getType() {
 	return this.type;
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.signs.IPlotSignData#getTypeName()
-     */
     @Override
     public String getTypeName() {
 	return this.type.name();

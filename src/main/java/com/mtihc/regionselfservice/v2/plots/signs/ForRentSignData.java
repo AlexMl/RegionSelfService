@@ -1,13 +1,14 @@
 package com.mtihc.regionselfservice.v2.plots.signs;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.util.BlockVector;
 
 
 public class ForRentSignData extends PlotSignData {
     
-    private String rentPlayer;
+    private UUID rentPlayer;
     private long rentPlayerTime;
     
     public ForRentSignData(ForRentSignData other) {
@@ -25,27 +26,25 @@ public class ForRentSignData extends PlotSignData {
     
     public ForRentSignData(Map<String, Object> values) {
 	super(values);
-	this.rentPlayer = (String) values.get("rent-player");
+	this.rentPlayer = values.get("rent-player") == null ? null : UUID.fromString((String) values.get("rent-player"));
 	this.rentPlayerTime = (Integer) values.get("rent-player-time");
     }
     
-    /* (non-Javadoc)
-     * @see com.mtihc.regionselfservice.v2.plots.PlotSignData#serialize()
-     */
     @Override
     public Map<String, Object> serialize() {
 	Map<String, Object> values = super.serialize();
-	values.put("rent-player", this.rentPlayer);
+	String uuidString = this.rentPlayer == null ? null : this.rentPlayer.toString();
+	values.put("rent-player", uuidString);
 	values.put("rent-player-time", this.rentPlayerTime);
 	return values;
     }
     
-    public String getRentPlayer() {
+    public UUID getRentPlayerUUID() {
 	return this.rentPlayer;
     }
     
-    public void setRentPlayer(String playerName) {
-	this.rentPlayer = playerName;
+    public void setRentPlayer(UUID playerUUID) {
+	this.rentPlayer = playerUUID;
     }
     
     public long getRentPlayerTime() {
@@ -59,5 +58,4 @@ public class ForRentSignData extends PlotSignData {
     public boolean isRentedOut() {
 	return this.rentPlayer != null;
     }
-    
 }

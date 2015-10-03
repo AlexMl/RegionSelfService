@@ -2,8 +2,8 @@ package com.mtihc.regionselfservice.v2.plots;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -12,7 +12,6 @@ import org.bukkit.World;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.mtihc.regionselfservice.v2.plots.signs.ForRentSign;
@@ -43,7 +42,7 @@ public abstract class PlotManager {
     protected final Messages messages;
     protected final IPlotManagerConfig config;
     protected final IPlotWorldConfig defaultConfig;
-    protected final Map<String, PlotWorld> worlds;
+    protected final Map<UUID, PlotWorld> worlds;
     protected final PlotControl control;
     
     public PlotManager(JavaPlugin plugin, WorldGuardPlugin worldGuard, IEconomy economy, IPlotManagerConfig config, IPlotWorldConfig defaultConfig) {
@@ -58,24 +57,23 @@ public abstract class PlotManager {
 	this.messages = new Messages(economy);
 	this.config = config;
 	this.defaultConfig = defaultConfig;
-	this.worlds = new HashMap<String, PlotWorld>();
+	this.worlds = new HashMap<UUID, PlotWorld>();
 	this.control = new PlotControl(this);
 	
-	Listener listener = new PlotListener(this);
-	Bukkit.getPluginManager().registerEvents(listener, plugin);
+	Bukkit.getPluginManager().registerEvents(new PlotListener(this), plugin);
 	
 	Runnable rentTimer = new Runnable() {
 	    
 	    @Override
 	    public void run() {
-		Collection<PlotWorld> plotWorlds = PlotManager.this.worlds.values();
+		
 		// iterate over all PlotWorlds
-		for (PlotWorld plotWorld : plotWorlds) {
+		for (PlotWorld plotWorld : getPlotWorlds()) {
 		    boolean requireSave = false;
 		    Collection<PlotData> plots = plotWorld.getPlotData().getValues();
+		    
 		    // iterate over all plots
 		    for (PlotData plot : plots) {
-			
 			if (!(plot instanceof Plot)) {
 			    // convert to Plot object
 			    plot = new Plot(plotWorld, plot);
@@ -85,19 +83,21 @@ public abstract class PlotManager {
 			String rentTimeString = new TimeStringConverter().convert(plot.getRentTime());
 			
 			Collection<IPlotSignData> rentSigns = plot.getSigns(PlotSignType.FOR_RENT);
+			
 			// iterate over all signs
 			for (IPlotSignData plotSign : rentSigns) {
 			    if (!(plotSign instanceof IPlotSign)) {
 				// convert to IPlotSign
 				plotSign = PlotSignType.createPlotSign((Plot) plot, plotSign);
 			    }
+			    
 			    // cast to ForRentSign
 			    ForRentSign rentSign = (ForRentSign) plotSign;
 			    if (!rentSign.isRentedOut()) {
 				// does not need to be updated
 				continue;
 			    }
-			    // get sign
+			    
 			    Sign sign = rentSign.getSign();
 			    // subtract a minute
 			    long newTime = rentSign.getRentPlayerTime() - 60000;
@@ -106,20 +106,19 @@ public abstract class PlotManager {
 				newTime = 0;
 				
 				// remove region member
-				region.getMembers().removePlayer(rentSign.getRentPlayer());
+				region.getMembers().removePlayer(rentSign.getRentPlayerUUID());
 				requireSave = true;
 				
 				// get player, if online
-				PlotManager.this.messages.rent_ended(rentSign.getRentPlayer(), region.getOwners().getPlayers(), region.getMembers().getPlayers(), plot.getRegionId(), rentTimeString);
+				PlotManager.this.messages.rent_ended(rentSign.getRentPlayerUUID(), region.getOwners().getUniqueIds(), region.getMembers().getUniqueIds(), plot.getRegionId(), rentTimeString);
 				
 				// remove player name from sign
 				rentSign.setRentPlayer(null);
-				
 			    } else {
 				if (newTime <= ((Plot) plot).getRentTimeExtendAllowedAt()) {
 				    // TODO move code to messages.rent_extend_warning method
 				    // TODO implement permission for this information
-				    Player renter = Bukkit.getPlayerExact(rentSign.getRentPlayer());
+				    Player renter = Bukkit.getPlayer(rentSign.getRentPlayerUUID());
 				    if (renter != null) {
 					renter.sendMessage(ChatColor.GREEN + "If you want to stay member of region " + ChatColor.WHITE + plot.getRegionId() + ChatColor.GREEN + ", you should extend the rent time now. You have " + ChatColor.WHITE + new TimeStringConverter().convert(newTime) + ChatColor.GREEN + " remaining.");
 				    }
@@ -130,7 +129,7 @@ public abstract class PlotManager {
 			    
 			    // update sign
 			    // if rent-player is null, it will automatically write cost:time instead of player:time
-			    ForRentSignText rentText = new ForRentSignText(plotWorld, plot.getRegionId(), rentSign.getRentPlayer(), newTime);
+			    ForRentSignText rentText = new ForRentSignText(plotWorld, plot.getRegionId(), rentSign.getRentPlayerUUID(), newTime);
 			    rentText.applyToSign(sign);
 			}
 			// save changes
@@ -147,7 +146,8 @@ public abstract class PlotManager {
 		}
 	    }
 	};
-	Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, rentTimer, 0, 60 * 20);
+	
+	Bukkit.getScheduler().runTaskTimer(plugin, rentTimer, 0L, 60 * 20L); // scheduleSyncRepeatingTask(plugin, rentTimer, 0, 60 * 20);
     }
     
     public IPlotWorldConfig getDefaultWorldConfig() {
@@ -156,12 +156,11 @@ public abstract class PlotManager {
     
     public void reloadWorld(World world) {
 	PlotWorld plotWorld = createPlotWorld(world);
-	this.worlds.put(plotWorld.getName(), plotWorld);
+	this.worlds.put(plotWorld.getWorldUID(), plotWorld);
     }
     
     public void reloadWorlds() {
-	List<World> worlds = Bukkit.getWorlds();
-	for (World world : worlds) {
+	for (World world : Bukkit.getWorlds()) {
 	    reloadWorld(world);
 	}
     }
@@ -192,8 +191,8 @@ public abstract class PlotManager {
 	return this.config;
     }
     
-    public PlotWorld getPlotWorld(String name) {
-	return this.worlds.get(name);
+    public PlotWorld getPlotWorld(World world) {
+	return this.worlds.get(world.getUID());
     }
     
     public Collection<PlotWorld> getPlotWorlds() {
