@@ -295,7 +295,7 @@ public class PlotControl {
 		
 		// remove owners, add buyer as owner
 		DefaultDomain newOwnerDomain = new DefaultDomain();
-		newOwnerDomain.addPlayer(player.getName());
+		newOwnerDomain.addPlayer(player.getUniqueId());
 		region.setOwners(newOwnerDomain);
 		// save region owner changes
 		try {
@@ -461,7 +461,7 @@ public class PlotControl {
 		}
 		
 		// add renter as member
-		region.getMembers().addPlayer(player.getName());
+		region.getMembers().addPlayer(player.getUniqueId());
 		
 		// save region owner changes
 		try {
