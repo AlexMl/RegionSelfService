@@ -117,23 +117,6 @@ public class PlotControl {
 	}
     }
     
-    public Set<UUID> getPotentialHomeless(World world, Set<UUID> uuids) {
-	HashSet<UUID> result = new HashSet<UUID>();
-	if (!uuids.isEmpty()) {
-	    // region has owners,
-	    // iterate over owners
-	    for (UUID ownerUUID : uuids) {
-		// count regions of owner
-		int ownerRegionCount = getRegionCountOfPlayer(world, ownerUUID);
-		if (ownerRegionCount - 1 == 0) {
-		    // player would become homeless
-		    result.add(ownerUUID);
-		}
-	    }
-	}
-	return result;
-    }
-    
     private void checkRegionCount(Player player, PlotWorld world) throws PlotControlException {
 	
 	//
@@ -214,7 +197,7 @@ public class PlotControl {
 	// and if player already has a region
 	//
 	boolean reserve = plotWorld.getConfig().isReserveFreeRegionsEnabled();
-	if (reserve && cost <= 0 && regionCount > 0) {
+	if (reserve && (cost <= 0) && (regionCount > 0)) {
 	    throw new PlotControlException("Free regions are reserved for new players.");
 	}
 	
@@ -227,10 +210,7 @@ public class PlotControl {
 	// System.out.println("o:" + region.getOwners().toString());
 	if (reserve) {
 	    
-	    // System.out.println(plotWorld.getPotentialHomeless(ownerUUIDs, 0));
-	    
-	    Set<UUID> homeless = getPotentialHomeless(plotWorld.getWorld(), ownerUUIDs);
-	    // System.out.println(homeless);
+	    Set<UUID> homeless = plotWorld.getPotentialHomeless(ownerUUIDs);
 	    if (!homeless.isEmpty()) {
 		String homelessString = "";
 		for (UUID playerUUID : homeless) {
@@ -946,9 +926,7 @@ public class PlotControl {
 	    
 	    if (region != null) {
 		Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
-		Set<UUID> homelessUUIDs = getPotentialHomeless(world, ownerUUIDs);
-		// System.out.println(plotWorld.getPotentialHomeless(ownerUUIDs, 0));
-		// System.out.println(homelessUUIDs);
+		Set<UUID> homelessUUIDs = plotWorld.getPotentialHomeless(ownerUUIDs);
 		if (!homelessUUIDs.isEmpty()) {
 		    String homelessString = "";
 		    for (UUID homelessUUID : homelessUUIDs) {

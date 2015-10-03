@@ -203,7 +203,7 @@ class PlotListener implements Listener {
 	    // because players would be able to work together, to mess up your server
 	    if (plotWorld.getConfig().isReserveFreeRegionsEnabled()) {
 		Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
-		Set<UUID> homelessUUIDs = this.mgr.getControl().getPotentialHomeless(plotWorld.getWorld(), ownerUUIDs);
+		Set<UUID> homelessUUIDs = plotWorld.getPotentialHomeless(ownerUUIDs);
 		if (!homelessUUIDs.isEmpty()) {
 		    String homelessString = "";
 		    for (UUID homelessUUID : homelessUUIDs) {

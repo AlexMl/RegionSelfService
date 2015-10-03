@@ -78,10 +78,15 @@ public class PlotWorld {
     public Set<UUID> getPotentialHomeless(Set<UUID> playerUUIDs) {
 	Set<UUID> result = new HashSet<UUID>();
 	
-	for (UUID playerUUID : playerUUIDs) {
-	    int count = this.manager.control.getRegionCountOfPlayer(getWorld(), playerUUID);
-	    if (count < 2) { // INFO: check if correct ( if(count -1 <= 0) { )
-		result.add(playerUUID);
+	// iterate over regions owners
+	if (!playerUUIDs.isEmpty()) {
+	    for (UUID playerUUID : playerUUIDs) {
+		// count regions of owner
+		int count = this.manager.control.getRegionCountOfPlayer(getWorld(), playerUUID);
+		if (count < 2) {
+		    // player only has 1 region -> would get homeless if he sells it
+		    result.add(playerUUID);
+		}
 	    }
 	}
 	return result;
