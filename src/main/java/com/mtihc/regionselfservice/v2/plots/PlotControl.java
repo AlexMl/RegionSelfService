@@ -65,7 +65,7 @@ public class PlotControl {
 	RegionManager regionManager = this.mgr.getPlotWorld(world).getRegionManager();
 	
 	// get online player
-	OfflinePlayer player = Bukkit.getPlayer(playerUUID);
+	OfflinePlayer player = Bukkit.getOfflinePlayer(playerUUID);
 	// if (player != null) {
 	// when player is online, use WorldGuard's method of counting regions
 	return regionManager.getRegionCountOfPlayer(this.mgr.getWorldGuard().wrapOfflinePlayer(player));
