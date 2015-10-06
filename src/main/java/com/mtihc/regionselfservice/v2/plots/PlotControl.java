@@ -65,22 +65,30 @@ public class PlotControl {
 	
 	// get online player
 	OfflinePlayer player = Bukkit.getOfflinePlayer(playerUUID);
-	// if (player != null) {
-	// when player is online, use WorldGuard's method of counting regions
-	return regionManager.getRegionCountOfPlayer(this.mgr.getWorldGuard().wrapOfflinePlayer(player));
-	// }
-	/*
-	 * // player is offline
-	 * 
-	 * // get all regions Collection<ProtectedRegion> regions =
-	 * regionManager.getRegions().values(); if (regions == null ||
-	 * regions.isEmpty()) { return 0; }
-	 * 
-	 * // count owned regions int count = 0; for (ProtectedRegion region :
-	 * regions) { if
-	 * (region.isOwner(this.mgr.getWorldGuard().wrapOfflinePlayer(Bukkit.
-	 * getOfflinePlayer(playerUUID)))) { count++; } } return count;
-	 */
+	if (player != null && player.isOnline()) {
+	    // when player is online, use WorldGuard's method of counting regions
+	    return regionManager.getRegionCountOfPlayer(this.mgr.getWorldGuard().wrapOfflinePlayer(player));
+	}
+	
+	// player is offline
+	
+	// get all regions
+	Collection<ProtectedRegion> regions = regionManager.getRegions().values();
+	if (regions == null || regions.isEmpty()) {
+	    return 0;
+	}
+	
+	// count owned regions
+	int count = 0;
+	for (ProtectedRegion region : regions) {
+	    Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
+	    
+	    if (ownerUUIDs.contains(playerUUID)) {
+		count++;
+	    }
+	}
+	
+	return count;
     }
     
     private static final Set<Material> invisibleBlockMaterials = new HashSet<Material>();
