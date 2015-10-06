@@ -31,7 +31,7 @@ tax_from_price: 100
 tax_to_account: Mtihc
 
 region_defaults:
-  owners: [Mtihc, Steve]
+  owners: []
   bottom_y: 5
   top_y: 255
   parent_automatic: false
@@ -43,4 +43,3 @@ region_size:
   maximum_height: 100
   minimum_y: 5
   maximum_y: 255
-
