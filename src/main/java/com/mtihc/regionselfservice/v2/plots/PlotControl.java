@@ -218,15 +218,9 @@ public class PlotControl {
 	    if (!homeless.isEmpty()) {
 		String homelessString = "";
 		for (UUID playerUUID : homeless) {
-		    homelessString += ", " + PlayerUUIDConverter.toPlayerName(playerUUID); // convert
-		    // from
-		    // uuid
-		    // to
-		    // player
-		    // names
+		    homelessString += ", " + PlayerUUIDConverter.toPlayerName(playerUUID); // convert from uuid to player names
 		}
-		homelessString = homelessString.substring(2);// remove comma and
-		// space
+		homelessString = homelessString.substring(2);// remove comma and space
 		throw new PlotControlException("Sorry, you can't buy this region. The following players would become homeless: " + homelessString);
 	    }
 	}
@@ -378,8 +372,7 @@ public class PlotControl {
 	}
 	
 	// check if(rentSign.getRentPlayer() == player.getName())
-	// then it's OK if he is already member. We will just add extra time to
-	// his rent-time.
+	// then it's OK if he is already member. We will just add extra time to his rent-time.
 	// TODO add a configuration like... when the remaining time is below
 	// 10%, THEN you are allowed to extend the time.
 	
@@ -414,8 +407,7 @@ public class PlotControl {
 	final Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
 	// get members for later
 	final Set<UUID> memberUUIDs = region.getMembers().getUniqueIds();
-	// System.out.println("o:" + region.getOwners().toString());
-	// System.out.println("m:" + region.getMembers().toString());
+	
 	// get rent cost and time
 	final double cost = plot.getRentCost();
 	final String timeString = new TimeStringConverter().convert(plot.getRentTime());
@@ -529,8 +521,7 @@ public class PlotControl {
 	int ty;
 	// If value is -1, use exact selection,
 	// otherwise use specified value.
-	// Specified value will be default value from config, or arguments from
-	// command
+	// Specified value will be default value from config, or arguments from command
 	if (bottomY <= -1) {
 	    by = sel.getMinimumPoint().getBlockY();
 	} else {
@@ -615,13 +606,11 @@ public class PlotControl {
 		if (parentRegion == null) {
 		    if (!allowAnywhere) {
 			// automatic parent was not found, but it's required...
-			// because player can only create regions inside owned
-			// existing regions.
+			// because player can only create regions inside owned existing regions.
 			throw new PlotControlException("You can only claim regions inside existing regions that you own");
 		    }
 		} else if (doAutomaticParent) {
-		    // found parent region,
-		    // and according to the configuration,
+		    // found parent region, and according to the configuration,
 		    // we should do automatic parenting
 		    try {
 			region.setParent(parentRegion);
@@ -645,10 +634,14 @@ public class PlotControl {
     
     public void define(final Player player, final String regionId, int bottomY, int topY) throws PlotControlException {
 	/*
-	 * exists already? invalid name? can't afford? call method defineRegion set
-	 * region owner(s) to player or default player pays money save region send
-	 * info
+	 * exists already? 
+	 * invalid name? 
+	 * can't afford? 
+	 * call method defineRegion 
+	 * set region owner(s) to player or default player pays money save region 
+	 * send info
 	 */
+	
 	// get player's selection
 	Selection sel = getSelection(player);
 	// get plot-world information
@@ -768,8 +761,12 @@ public class PlotControl {
     
     public void redefine(final Player player, final String regionId, int bottomY, int topY) throws PlotControlException {
 	/*
-	 * doesn't exist? different owner? store old size, etc call method
-	 * defineRegion calculate cost/refund costs player if larger, refunds owners
+	 * doesn't exist?
+	 * different owner?
+	 * store old size, etc
+	 * call method
+	 * defineRegion 
+	 * calculate cost/refund costs player if larger, refunds owners
 	 * if smaller
 	 */
 	
