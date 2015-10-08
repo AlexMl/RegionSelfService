@@ -47,6 +47,8 @@ public class SelfServicePlugin extends JavaPlugin {
 	reloadConfig();
 	
 	this.cmd = new PlotCommand(this.manager, null, new String[] {"plot", "ss", "selfservice"});
+	
+	getLogger().info("Plugin enabled!");
     }
     
     @Override
