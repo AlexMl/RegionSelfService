@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import org.bukkit.util.BlockVector;
 
+import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
+
 
 public class ForRentSignData extends PlotSignData {
     
@@ -26,14 +28,14 @@ public class ForRentSignData extends PlotSignData {
     
     public ForRentSignData(Map<String, Object> values) {
 	super(values);
-	this.rentPlayer = values.get("rent-player") == null ? null : UUID.fromString((String) values.get("rent-player"));
+	this.rentPlayer = PlayerUUIDConverter.fromString((String) values.get("rent-player"));
 	this.rentPlayerTime = (Integer) values.get("rent-player-time");
     }
     
     @Override
     public Map<String, Object> serialize() {
 	Map<String, Object> values = super.serialize();
-	String uuidString = this.rentPlayer == null ? null : this.rentPlayer.toString();
+	String uuidString = (this.rentPlayer == null) ? null : this.rentPlayer.toString();
 	values.put("rent-player", uuidString);
 	values.put("rent-player-time", this.rentPlayerTime);
 	return values;
