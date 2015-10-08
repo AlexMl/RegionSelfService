@@ -2,7 +2,6 @@ package com.mtihc.regionselfservice.v2.plots.signs;
 
 import java.util.UUID;
 
-import org.bukkit.Bukkit;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.SignChangeEvent;
@@ -344,7 +343,7 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 		    this.rentTime = time;
 		} catch (NumberFormatException e) {
 		    // converting failed, this must be a player name
-		    this.rentPlayerUUID = Bukkit.getOfflinePlayer(costOrPlayer).getUniqueId();
+		    this.rentPlayerUUID = PlayerUUIDConverter.toUUID(costOrPlayer);
 		    // so the time must be the remaining rent time for the
 		    // player
 		    this.rentPlayerTime = time;

@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import org.bukkit.Bukkit;
-
 import com.mtihc.regionselfservice.v2.plots.IPlotWorldConfig;
 import com.mtihc.regionselfservice.v2.plugin.util.YamlFile;
+import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 
 
 public class PlotWorldConfig extends YamlFile implements IPlotWorldConfig {
@@ -90,12 +89,11 @@ public class PlotWorldConfig extends YamlFile implements IPlotWorldConfig {
 	return getConfig().getInt("region_defaults.top_y");
     }
     
-    @SuppressWarnings("deprecation")
     public List<UUID> getDefaultOwnerUUIDs() {
 	List<UUID> ownerUUIDs = new ArrayList<UUID>();
 	
 	for (String ownerName : getConfig().getStringList("region_defaults.owners")) {
-	    ownerUUIDs.add(Bukkit.getOfflinePlayer(ownerName).getUniqueId());
+	    ownerUUIDs.add(PlayerUUIDConverter.toUUID(ownerName));
 	}
 	return ownerUUIDs;
     }
@@ -112,9 +110,8 @@ public class PlotWorldConfig extends YamlFile implements IPlotWorldConfig {
 	return getConfig().getBoolean("enable_create_cost");
     }
     
-    @SuppressWarnings("deprecation")
     public UUID getTaxAccountHolder() {
-	return Bukkit.getOfflinePlayer(getConfig().getString("tax_to_account")).getUniqueId();
+	return PlayerUUIDConverter.toUUID(getConfig().getString("tax_to_account"));
     }
     
     public double getTaxPercent() {
