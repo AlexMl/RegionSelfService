@@ -1,9 +1,11 @@
-name: RegionSelfService
-author: Mtihc
-description: Make regions and let new people become owner
-main: com.mtihc.regionselfservice.v2.plugin.SelfServicePlugin
+name: ${project.name}
+description: ${project.description}
+version: ${project.version}
+author: [Mtihc, Aubli]
 depend: [Vault, WorldEdit, WorldGuard]
-version: 2.1.0-1_DEV
+
+main: com.mtihc.regionselfservice.v2.plugin.SelfServicePlugin
+
 commands:
     selfservice:
         description: For detailed information, execute /selfservice ?
