@@ -10,6 +10,7 @@ import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -293,7 +294,7 @@ public class PlotControl {
 		Collection<IPlotSignData> forSaleSigns = plot.getSigns(PlotSignType.FOR_SALE);
 		for (IPlotSignData data : forSaleSigns) {
 		    BlockVector vec = data.getBlockVector();
-		    plot.removeSign(vec);
+		    plot.removeSign(vec, player.getGameMode() != GameMode.CREATIVE);
 		}
 		
 		// delete plot-info if possible, otherwise just save changes
@@ -1028,7 +1029,7 @@ public class PlotControl {
 			Collection<IPlotSignData> forSaleSigns = plot.getSigns(PlotSignType.FOR_SALE);
 			for (IPlotSignData data : forSaleSigns) {
 			    BlockVector vec = data.getBlockVector();
-			    plot.removeSign(vec);
+			    plot.removeSign(vec, true);
 			}
 			
 			// refund, now we know it's deleted

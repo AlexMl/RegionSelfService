@@ -183,8 +183,7 @@ class PlotListener implements Listener {
 	    }
 	    
 	    // You can't sell a player's last region,
-	    // because players would be able to work together, to mess up your
-	    // server
+	    // because players would be able to work together, to mess up your server
 	    if (plotWorld.getConfig().isReserveFreeRegionsEnabled()) {
 		Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
 		Set<UUID> homelessUUIDs = plotWorld.getPotentialHomeless(ownerUUIDs);
@@ -196,7 +195,6 @@ class PlotListener implements Listener {
 		    homelessString = homelessString.substring(2);
 		    player.sendMessage(ChatColor.RED + "Sorry, you can't sell this region. The following players would become homeless: " + homelessString);
 		}
-		
 	    }
 	    
 	    // check permission to sell, outside the region
@@ -394,7 +392,7 @@ class PlotListener implements Listener {
 		event.setCancelled(true);
 		return;
 	    } else {
-		plot.removeSign(coords);
+		plot.removeSign(coords, player.getGameMode() != GameMode.CREATIVE);
 		plot.save();
 		Collection<IPlotSignData> signs = plot.getSigns(type);
 		if (signs == null || signs.isEmpty()) {
