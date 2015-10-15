@@ -178,7 +178,7 @@ class PlotListener implements Listener {
 	    
 	    // check permission to sell, unowned regions
 	    if (!isOwner && !player.hasPermission(Permission.SELL_ANYREGION)) {
-		
+		denieSignChange(player, ChatColor.RED + "You can't sell regions that you don't own.", sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
