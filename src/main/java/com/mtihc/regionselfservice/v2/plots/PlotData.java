@@ -149,7 +149,7 @@ public class PlotData implements ConfigurationSerializable {
 	return false;
     }
     
-    public IPlotSignData removeSign(BlockVector coords) {
+    public IPlotSignData removeSign(BlockVector coords, boolean forceBreak) {
 	return this.signs.remove(coords);
     }
     

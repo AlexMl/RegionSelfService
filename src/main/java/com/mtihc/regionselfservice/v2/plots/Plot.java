@@ -100,10 +100,10 @@ public class Plot extends PlotData {
     }
     
     @Override
-    public IPlotSignData removeSign(BlockVector coords) {
-	IPlotSignData result = super.removeSign(coords);
+    public IPlotSignData removeSign(BlockVector coords, boolean forceBreak) {
+	IPlotSignData result = super.removeSign(coords, forceBreak);
 	Block block = coords.toLocation(this.plotWorld.getWorld()).getBlock();
-	if (block.getState() instanceof Sign) {
+	if (block.getState() instanceof Sign && forceBreak) {
 	    block.breakNaturally();
 	}
 	return result;
@@ -128,7 +128,7 @@ public class Plot extends PlotData {
 	Collection<IPlotSignData> signs = getSigns();
 	for (IPlotSignData data : signs) {
 	    BlockVector vec = data.getBlockVector();
-	    removeSign(vec);
+	    removeSign(vec, false);
 	}
 	// remove plot data
 	this.plotWorld.getPlotData().remove(this.regionId);
