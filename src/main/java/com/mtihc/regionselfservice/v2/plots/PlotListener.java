@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -295,6 +296,8 @@ class PlotListener implements Listener {
 	if (shouldBreak) {
 	    if (eventPlayer.getGameMode() != GameMode.CREATIVE) {
 		block.breakNaturally();
+	    } else {
+		block.setType(Material.AIR);
 	    }
 	}
 	

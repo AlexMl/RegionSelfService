@@ -3,6 +3,7 @@ package com.mtihc.regionselfservice.v2.plots;
 import java.util.Collection;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -105,6 +106,8 @@ public class Plot extends PlotData {
 	Block block = coords.toLocation(this.plotWorld.getWorld()).getBlock();
 	if (block.getState() instanceof Sign && forceBreak) {
 	    block.breakNaturally();
+	} else if (block.getState() instanceof Sign) {
+	    block.setType(Material.AIR);
 	}
 	return result;
     }
