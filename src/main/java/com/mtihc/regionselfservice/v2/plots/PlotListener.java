@@ -45,7 +45,7 @@ class PlotListener implements Listener {
     @EventHandler
     public void onSignChange(SignChangeEvent event) {
 	if (event.isCancelled()) {
-	    return;// event was cancelled, Usefull at all? Neccessary?
+	    return;
 	}
 	
 	Sign sign = (Sign) event.getBlock().getState();
@@ -182,6 +182,12 @@ class PlotListener implements Listener {
 		return;
 	    }
 	    
+	    // check permission to sell, outside the region
+	    if (!isInside && !player.hasPermission(Permission.SELL_ANYWHERE)) {
+		denieSignChange(player, ChatColor.RED + "You can't place this sign outside the region itself.", sign.getBlock(), true, event, true);
+		return;
+	    }
+	    
 	    // You can't sell a player's last region,
 	    // because players would be able to work together, to mess up your server
 	    if (plotWorld.getConfig().isReserveFreeRegionsEnabled()) {
@@ -193,14 +199,9 @@ class PlotListener implements Listener {
 			homelessString += ", " + PlayerUUIDConverter.toPlayerName(homelessUUID);
 		    }
 		    homelessString = homelessString.substring(2);
-		    player.sendMessage(ChatColor.RED + "Sorry, you can't sell this region. The following players would become homeless: " + homelessString);
+		    denieSignChange(player, ChatColor.RED + "Sorry, you can't sell this region. The following players would become homeless: " + homelessString, sign.getBlock(), true, event, true);
+		    return;
 		}
-	    }
-	    
-	    // check permission to sell, outside the region
-	    if (!isInside && !player.hasPermission(Permission.SELL_ANYWHERE)) {
-		denieSignChange(player, ChatColor.RED + "You can't place this sign outside the region itself.", sign.getBlock(), true, event, true);
-		return;
 	    }
 	    
 	    ForSaleSignText saleText = (ForSaleSignText) signText;
