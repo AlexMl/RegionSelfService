@@ -48,6 +48,12 @@ public class SelfServicePlugin extends JavaPlugin {
 	
 	this.cmd = new PlotCommand(this.manager, null, new String[] {"plot", "ss", "selfservice"});
 	
+	try {
+	    new SelfServiceMessage(this);
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+	
 	getLogger().info("Plugin enabled!");
     }
     
