@@ -11,6 +11,8 @@ import com.mtihc.regionselfservice.v2.plots.Plot;
 import com.mtihc.regionselfservice.v2.plots.PlotWorld;
 import com.mtihc.regionselfservice.v2.plots.exceptions.SignException;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
 import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 
 
@@ -75,7 +77,7 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	} else if (type == PlotSignType.FOR_SALE) {
 	    return new ForSaleSignText(plotWorld, lines);
 	} else {
-	    throw new SignException("Not a valid plot sign. Could not find the matching sign type.");
+	    throw new SignException(SelfServiceMessage.getMessage(MessageKey.error_sign_not_valid_type));
 	}
 	
     }
@@ -127,17 +129,17 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	this.plotWorld = plotWorld;
 	this.type = getPlotSignType(lines);
 	if (this.type == null) {
-	    throw new SignException("Not a valid plot sign. Could not find the matching sign type.");
+	    throw new SignException(SelfServiceMessage.getMessage(MessageKey.error_sign_not_valid_type));
 	}
 	
 	this.regionId = getRegionId(lines);
 	if (this.regionId == null) {
-	    throw new SignException("Region name is not specified on lines 3 and/or 4.");
+	    throw new SignException(SelfServiceMessage.getMessage(MessageKey.error_sign_no_region));
 	}
 	
 	Plot plot = plotWorld.getPlot(this.regionId);
 	if (plot == null || plot.getRegion() == null) {
-	    throw new SignException("Region '" + this.regionId + "' does not exist.");
+	    throw new SignException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_exists, this.regionId));
 	}
 	this.plot = plotWorld.getPlot(this.regionId);
     }
@@ -177,7 +179,7 @@ public abstract class PlotSignText<T extends IPlotSignData> {
 	    try {
 		return Math.max(0, Double.parseDouble(lines[1]));
 	    } catch (Exception e) {
-		throw new SignException("There is no cost specified on line 2.");
+		throw new SignException(SelfServiceMessage.getMessage(MessageKey.error_sign_no_cost));
 	    }
 	}
 	

@@ -1,14 +1,18 @@
 package com.mtihc.regionselfservice.v2.plots.exceptions;
 
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
+
+
 public class PlotBoundsException extends PlotControlException {
     
     private static final long serialVersionUID = -9136937024689204439L;
     
     public enum Type {
-	SELECTION_TOO_SMALL("The selected region is too small..."),
-	SELECTION_TOO_BIG("The selected region is too big!"),
-	SELECTION_TOO_LOW("The bottom-y coordinate is too low."),
-	SELECTION_TOO_HIGH("The top-y coordinate is too high");
+	SELECTION_TOO_SMALL(SelfServiceMessage.getMessage(MessageKey.error_selection_to_small)),
+	SELECTION_TOO_BIG(SelfServiceMessage.getMessage(MessageKey.error_selection_to_big)),
+	SELECTION_TOO_LOW(SelfServiceMessage.getMessage(MessageKey.error_selection_to_low)),
+	SELECTION_TOO_HIGH(SelfServiceMessage.getMessage(MessageKey.error_selection_to_high));
 	
 	private String message;
 	
@@ -18,6 +22,10 @@ public class PlotBoundsException extends PlotControlException {
 	
 	public String getMessage() {
 	    return this.message;
+	}
+	
+	public String getMessage(Object... args) {
+	    return String.format(getMessage(), args);
 	}
 	
     }
@@ -36,13 +44,12 @@ public class PlotBoundsException extends PlotControlException {
     
     static private String getMessage(Type type, int topY, int bottomY, int min, int max) {
 	if (type.equals(Type.SELECTION_TOO_LOW)) {
-	    return type.getMessage() + " The bottom-y coordinate is " + bottomY + ". But shouldn't be lower than " + min;
+	    return type.getMessage(bottomY, min);
 	} else if (type.equals(Type.SELECTION_TOO_HIGH)) {
-	    return type.getMessage() + " The top-y coordinate is " + topY + ". But shouldn't be greater than " + max;
+	    return type.getMessage(topY, max);
 	} else {
-	    return "You selection's top-y coordinate is too high, or the bottom-y is too low.";
+	    return SelfServiceMessage.getMessage(MessageKey.error_selection);
 	}
-	
     }
     
     public PlotBoundsException(Type type, int width, int length, int height, int minimum, int maximum, int minHeight, int maxHeight) {
@@ -52,22 +59,12 @@ public class PlotBoundsException extends PlotControlException {
     
     static private String getMessage(Type type, int width, int length, int height, int minimum, int maximum, int minHeight, int maxHeight) {
 	if (type.equals(Type.SELECTION_TOO_BIG)) {
-	    return type.getMessage() + " Your selection's size is " + width + "x" + length + "x" + height + ". But the maximum width/length/height is " + maximum + "x" + maximum + "x" + maxHeight + ".";
+	    return type.getMessage(width, length, height, maximum, maximum, maxHeight);
 	} else if (type.equals(Type.SELECTION_TOO_SMALL)) {
-	    return type.getMessage() + " Your selection's size is " + width + "x" + length + "x" + height + ". But the minimum is " + minimum + "x" + minimum + "x" + minHeight + ".";
+	    return type.getMessage(width, length, height, minimum, minimum, minHeight);
 	} else {
-	    return "Your selection's size is too big or too small. Your selection's size is " + width + "x" + length + "x" + height + ".";
+	    return SelfServiceMessage.getMessage(MessageKey.error_selection);
 	}
-	
-    }
-    
-    public PlotBoundsException(Type type, String regionName, String worldName) {
-	super(getMessage(type, regionName, worldName));
-	this.type = type;
-    }
-    
-    static private String getMessage(Type type, String regionName, String worldName) {
-	return type.getMessage().replace("<region name>", regionName).replace("<world>", worldName);
     }
     
     public Type getType() {

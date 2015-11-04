@@ -17,6 +17,8 @@ import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForRentSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForSaleSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignType;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 
@@ -143,8 +145,7 @@ public class Plot extends PlotData {
 	ProtectedRegion region = getRegion();
 	
 	if (region == null) {
-	    String errorMsg = ChatColor.RED + "Failed to send region info. Region \"" + getRegionId() + "\" doesn't exist.";
-	    sender.sendMessage(errorMsg);
+	    SelfServiceMessage.sendFormatedMessage(sender, MessageKey.error_region_send, getRegionId());
 	    return;
 	}
 	
@@ -152,6 +153,7 @@ public class Plot extends PlotData {
 	int length = getLength();
 	int height = getHeight();
 	
+	// TODO messages?
 	String[] wgInfo = new String[] {ChatColor.GREEN + "Region: " + ChatColor.DARK_GREEN + getRegionId() + ChatColor.GREEN + " Priority: " + ChatColor.DARK_GREEN + region.getPriority() + ChatColor.GREEN + " Parent: " + ChatColor.DARK_GREEN + (region.getParent() == null ? "no parent" : region.getParent().getId()), ChatColor.GREEN + "World: " + ChatColor.DARK_GREEN + this.plotWorld.getName() + ChatColor.GREEN + " Min: " + ChatColor.DARK_GREEN + vectorToString(region.getMinimumPoint()) + ChatColor.GREEN + " Max: " + ChatColor.DARK_GREEN + vectorToString(region.getMaximumPoint()), ChatColor.GREEN + "Size: " + ChatColor.DARK_GREEN + width + "x" + length + ChatColor.GREEN + " (Height: " + ChatColor.DARK_GREEN + height + ChatColor.GREEN + ")"};
 	
 	double blockWorth = this.plotWorld.getConfig().getBlockWorth();
@@ -165,7 +167,6 @@ public class Plot extends PlotData {
 	// send messages with region info
 	sender.sendMessage(wgInfo);
 	sender.sendMessage(info);
-	
     }
     
     private String vectorToString(com.sk89q.worldedit.BlockVector blockVector) {

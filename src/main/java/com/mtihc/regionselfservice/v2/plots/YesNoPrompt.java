@@ -7,6 +7,9 @@ import org.bukkit.conversations.ConversationContext;
 import org.bukkit.conversations.Prompt;
 import org.bukkit.conversations.ValidatingPrompt;
 
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
+
 
 public abstract class YesNoPrompt extends ValidatingPrompt {
     
@@ -18,7 +21,7 @@ public abstract class YesNoPrompt extends ValidatingPrompt {
     protected abstract Prompt onNo();
     
     public String getPromptText(ConversationContext context) {
-	return (COLOR_DEFAULT + "Type " + COLOR_HIGHLIGHT + "YES" + COLOR_DEFAULT + " or " + COLOR_HIGHLIGHT + "NO" + COLOR_DEFAULT + ".");
+	return (COLOR_DEFAULT + SelfServiceMessage.getMessage(MessageKey.prompt_type) + " " + COLOR_HIGHLIGHT + SelfServiceMessage.getMessage(MessageKey.prompt_yes) + COLOR_DEFAULT + " " + SelfServiceMessage.getMessage(MessageKey.prompt_or) + " " + COLOR_HIGHLIGHT + SelfServiceMessage.getMessage(MessageKey.prompt_no) + COLOR_DEFAULT + ".");
     }
     
     @Override
@@ -26,7 +29,7 @@ public abstract class YesNoPrompt extends ValidatingPrompt {
 	if (input.startsWith("/")) {
 	    Bukkit.dispatchCommand((CommandSender) context.getForWhom(), input.substring(1));
 	    return false;
-	} else if (input.equalsIgnoreCase("YES") || input.equalsIgnoreCase("NO")) {
+	} else if (input.equalsIgnoreCase(SelfServiceMessage.getMessage(MessageKey.prompt_yes)) || input.equalsIgnoreCase(SelfServiceMessage.getMessage(MessageKey.prompt_no))) {
 	    return true;
 	} else {
 	    return false;
@@ -36,7 +39,7 @@ public abstract class YesNoPrompt extends ValidatingPrompt {
     
     @Override
     protected Prompt acceptValidatedInput(ConversationContext context, String input) {
-	if (input.equalsIgnoreCase("YES")) {
+	if (input.equalsIgnoreCase(SelfServiceMessage.getMessage(MessageKey.prompt_yes))) {
 	    return onYes();
 	}
 	return onNo();

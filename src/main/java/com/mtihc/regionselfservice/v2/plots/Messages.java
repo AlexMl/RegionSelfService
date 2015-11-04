@@ -5,12 +5,11 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
-import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
 import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 
 
@@ -79,8 +78,11 @@ public class Messages {
 	String permMember = Permission.INFORM_MEMBER_SOLD;
 	
 	// You bought region <id> for <cost> from <owners>
-	SelfServiceMessage.sendFormatedMessage(buyer, MessageKey.bought_region, regionId, format(cost), ownerNames);
+	buyer.sendMessage(ChatColor.GREEN + "You bought region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " from " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".");
 	explainTax(buyer, taxAccountUUID, tax);
+	
+	// Region <id> was sold to <buyer>.
+	String msg = ChatColor.GREEN + "Region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " was sold to " + ChatColor.WHITE + buyer.getName() + ChatColor.GREEN + ".";
 	
 	if (owners != null) {
 	    if (owners.size() > 1) {
@@ -89,12 +91,11 @@ public class Messages {
 		    if (owner == null || !owner.isOnline() || !owner.hasPermission(permOwner) || owner.getName().equalsIgnoreCase(buyer.getName())) {
 			continue;
 		    }
-		    // Region <id> was sold to <buyer>.
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.bought_region_player, regionId, buyer.getName());
+		    owner.sendMessage(msg);
 		    // Sharing <cost> with <owners>
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.sharing_cost_with, format(cost), ownerNames);
+		    owner.sendMessage(ChatColor.GREEN + "Sharing " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " with " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".");
 		    // You all received an equal share of <share>
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.received_equal_share_of, formatShare(cost, owners));
+		    owner.sendMessage(ChatColor.GREEN + "You all received an equal share of " + ChatColor.WHITE + formatShare(cost, owners));
 		    explainTax(owner, taxAccountUUID, tax);
 		}
 	    } else {
@@ -105,9 +106,7 @@ public class Messages {
 		    owner = null;
 		}
 		if (owner != null && owner.isOnline() && owner.hasPermission(permOwner) && !owner.getName().equalsIgnoreCase(buyer.getName())) {
-		    // Region <id> was sold to <buyer>.
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.bought_region_player, regionId, buyer.getName());
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.received, format(cost));
+		    owner.sendMessage(msg + ChatColor.GREEN + " You received " + ChatColor.WHITE + format(cost));
 		    explainTax(owner, taxAccountUUID, tax);
 		}
 	    }
@@ -119,18 +118,19 @@ public class Messages {
 		if (member == null || !member.isOnline() || !member.hasPermission(permMember) || member.getName().equalsIgnoreCase(buyer.getName())) {
 		    continue;
 		}
-		// Region <id> was sold to <buyer>.
-		SelfServiceMessage.sendFormatedMessage(member, MessageKey.bought_region_player, regionId, buyer.getName());
+		member.sendMessage(msg);
 		// You are member of that region
-		SelfServiceMessage.sendMessage(member, MessageKey.member_of_region);
+		member.sendMessage(ChatColor.GREEN + "You are member of that region.");
 	    }
 	}
+	
     }
     
     private void explainTax(CommandSender sender, UUID taxAccountUUID, double tax) {
 	if (tax != 0) {
-	    SelfServiceMessage.sendFormatedMessage(sender, MessageKey.received_tax_of, PlayerUUIDConverter.toPlayerName(taxAccountUUID), format(tax));
+	    sender.sendMessage(ChatColor.WHITE + PlayerUUIDConverter.toPlayerName(taxAccountUUID) + ChatColor.GREEN + " received the tax of " + ChatColor.WHITE + format(tax) + ChatColor.GREEN + ".");
 	}
+	
     }
     
     public void rent_ended(UUID renterUUID, Set<UUID> owners, Set<UUID> members, String regionId, String timeString) {
@@ -138,12 +138,12 @@ public class Messages {
 	OfflinePlayer renter = Bukkit.getOfflinePlayer(renterUUID);
 	
 	if (renter.isOnline()) {
-	    // Rent <time> of <region> has passed
-	    SelfServiceMessage.sendFormatedMessage(renter.getPlayer(), MessageKey.rent_time_passed, timeString, regionId);
+	    renter.getPlayer().sendMessage(ChatColor.RED + "The rent time of " + timeString + " has passed. You are no longer a member of region \"" + regionId + "\".");
 	}
 	
 	String permOwner = Permission.INFORM_OWNER_RENTED;
 	String permMember = Permission.INFORM_MEMBER_RENTED;
+	String msg = ChatColor.RED + "Player " + renter.getName() + "'s rent time of " + timeString + " has passed. " + renter.getName() + " is no longer a member of region \"" + regionId + "\".";
 	
 	if (owners != null) {
 	    for (UUID ownerUUID : owners) {
@@ -151,8 +151,7 @@ public class Messages {
 		if (owner == null || !owner.isOnline() || !owner.hasPermission(permOwner) || ownerUUID.equals(renter.getUniqueId())) {
 		    continue;
 		}
-		// Rent <time> for <player> of <region> has passed
-		SelfServiceMessage.sendFormatedMessage(owner, MessageKey.rent_time_passed_player, renter.getName(), timeString, renter.getName(), regionId);
+		owner.sendMessage(msg);
 	    }
 	}
 	
@@ -162,10 +161,10 @@ public class Messages {
 		if (member == null || !member.isOnline() || !member.hasPermission(permMember) || memberUUID.equals(renter.getUniqueId())) {
 		    continue;
 		}
-		// Rent <time> for <player> of <region> has passed
-		SelfServiceMessage.sendFormatedMessage(member, MessageKey.rent_time_passed_player, renter.getName(), timeString, renter.getName(), regionId);
+		member.sendMessage(msg);
 	    }
 	}
+	
     }
     
     public void rented(CommandSender renter, Set<UUID> owners, Set<UUID> members, String regionId, double cost, String time) {
@@ -175,7 +174,10 @@ public class Messages {
 	String permMember = Permission.INFORM_MEMBER_RENTED;
 	
 	// You rented region <id> for <cost> from <owners>
-	SelfServiceMessage.sendFormatedMessage(renter, MessageKey.rent_region, regionId, format(cost), ownerNames, time);
+	renter.sendMessage(ChatColor.GREEN + "You rented region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " from " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ", for " + ChatColor.WHITE + time + ChatColor.GREEN + ".");
+	
+	// Region <id> was rented out to <buyer> for <time>.
+	String msg = ChatColor.GREEN + "Region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " was rented out to " + ChatColor.WHITE + renter.getName() + ChatColor.GREEN + " for " + ChatColor.WHITE + time + ChatColor.GREEN + ".";
 	
 	if (owners != null) {
 	    if (owners.size() > 1) {
@@ -184,12 +186,11 @@ public class Messages {
 		    if (owner == null || !owner.isOnline() || !owner.hasPermission(permOwner) || owner.getName().equalsIgnoreCase(renter.getName())) {
 			continue;
 		    }
-		    // Region <id> was rented out to <buyer> for <time>.
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.rent_region_player, regionId, renter.getName(), time);
+		    owner.sendMessage(msg);
 		    // Sharing <cost> with <owners>
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.sharing_cost_with, format(cost), ownerNames);
+		    owner.sendMessage(ChatColor.GREEN + "Sharing " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " with " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".");
 		    // You all received an equal share of <share>
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.received_equal_share_of, formatShare(cost, owners));
+		    owner.sendMessage(ChatColor.GREEN + "You all received an equal share of " + ChatColor.WHITE + formatShare(cost, owners));
 		}
 	    } else {
 		Player owner;
@@ -199,9 +200,8 @@ public class Messages {
 		    owner = null;
 		}
 		if (owner != null && owner.isOnline() && owner.hasPermission(permOwner) && !owner.getName().equalsIgnoreCase(renter.getName())) {
-		    // Region <id> was rented out to <buyer> for <time>.
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.rent_region_player, regionId, renter.getName(), time);
-		    SelfServiceMessage.sendFormatedMessage(owner, MessageKey.received, format(cost));
+		    owner.sendMessage(msg);
+		    owner.sendMessage(ChatColor.GREEN + "You received " + ChatColor.WHITE + format(cost));
 		}
 	    }
 	}
@@ -211,10 +211,11 @@ public class Messages {
 		if (member == null || !member.isOnline() || !member.hasPermission(permMember) || member.getName().equalsIgnoreCase(renter.getName())) {
 		    continue;
 		}
-		SelfServiceMessage.sendFormatedMessage(member, MessageKey.rent_region_player, regionId, renter.getName(), time);
-		SelfServiceMessage.sendFormatedMessage(member, MessageKey.member_of_region);
+		member.sendMessage(msg);
+		member.sendMessage(ChatColor.GREEN + "You are also member of that region.");
 	    }
 	}
+	
     }
     
     /*
@@ -230,13 +231,21 @@ public class Messages {
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_UPFORSALE;
 	String permMember = Permission.INFORM_MEMBER_UPFORSALE;
-	boolean sharedProfits = (owners != null && owners.size() > 1);
-	
-	// You put region <id> up for sale, for <cost>.
-	SelfServiceMessage.sendFormatedMessage(seller, MessageKey.up_for_sale, regionId, format(cost));
 	
 	// If the region is sold, the profits are shared amongst <owners>.
-	SelfServiceMessage.sendFormatedMessage(seller, sharedProfits ? MessageKey.bought_profits_shared : MessageKey.bought_profits_single, ownerNames);
+	String msg2 = ChatColor.GREEN + "If the region is sold, the profits ";
+	if (owners != null && owners.size() > 1) {
+	    msg2 += "are shared amongst " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".";
+	} else {
+	    msg2 += "are for " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".";
+	}
+	
+	// You put region <id> up for sale, for <cost>.
+	seller.sendMessage(ChatColor.GREEN + "You put region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " up for sale, for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + ".");
+	seller.sendMessage(msg2);
+	
+	// Player <seller> put region <id> up for sale, for <cost>.
+	String msg = ChatColor.GREEN + "Player " + ChatColor.WHITE + seller.getName() + ChatColor.GREEN + " put region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " up for sale, for " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + ".";
 	
 	if (owners != null) {
 	    for (UUID ownerUUID : owners) {
@@ -245,10 +254,8 @@ public class Messages {
 		    continue;
 		}
 		// You are owner of that region.
-		// Player <seller> put region <id> up for sale, for <cost>.
-		SelfServiceMessage.sendFormatedMessage(player, MessageKey.up_for_sale_player, seller.getName(), regionId, format(cost));
-		SelfServiceMessage.sendMessage(player, MessageKey.owner_of_region);
-		SelfServiceMessage.sendFormatedMessage(seller, sharedProfits ? MessageKey.bought_profits_shared : MessageKey.bought_profits_single, ownerNames);
+		player.sendMessage(msg + " You are owner of that region.");
+		player.sendMessage(msg2);
 	    }
 	} else if (members != null) {
 	    for (UUID memberUUID : members) {
@@ -257,10 +264,10 @@ public class Messages {
 		    continue;
 		}
 		// You are member of that region.
-		SelfServiceMessage.sendFormatedMessage(player, MessageKey.up_for_sale_player, seller.getName(), regionId, format(cost));
-		SelfServiceMessage.sendMessage(player, MessageKey.member_of_region);
+		player.sendMessage(msg + " You are member of that region.");
 	    }
 	}
+	
     }
     
     /*
@@ -276,12 +283,19 @@ public class Messages {
 	String ownerNames = toUserfriendlyString(owners);
 	String permOwner = Permission.INFORM_OWNER_UPFORRENT;
 	String permMember = Permission.INFORM_MEMBER_UPFORRENT;
-	boolean sharedProfits = (owners != null && owners.size() > 1);
-	
-	SelfServiceMessage.sendFormatedMessage(letter, MessageKey.up_for_rent, regionId, format(costPerTime), time);
 	
 	// If the region is sold, the profits are shared amongst <owners>.
-	SelfServiceMessage.sendFormatedMessage(letter, sharedProfits ? MessageKey.rent_profits_shared : MessageKey.rent_profits_single, ownerNames);
+	String msg2 = ChatColor.GREEN + "If the region is rented out, the profits ";
+	if (owners != null && owners.size() > 1) {
+	    msg2 += "are shared amongst " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".";
+	} else {
+	    msg2 += "are for " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".";
+	}
+	letter.sendMessage(ChatColor.GREEN + "You put region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " up for rent, for " + ChatColor.WHITE + format(costPerTime) + ChatColor.GREEN + " per " + ChatColor.WHITE + time + ChatColor.GREEN + ".");
+	letter.sendMessage(msg2);
+	
+	// Player <letter> put region <id> up for rent, for <cost> per <time>.
+	String msg = ChatColor.GREEN + "Player " + ChatColor.WHITE + letter.getName() + ChatColor.GREEN + " put region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " up for rent, for " + ChatColor.WHITE + format(costPerTime) + ChatColor.GREEN + " per " + ChatColor.WHITE + time + ChatColor.GREEN + ".";
 	
 	if (owners != null) {
 	    for (UUID ownerUUID : owners) {
@@ -289,11 +303,10 @@ public class Messages {
 		if (player == null || !player.isOnline() || !player.hasPermission(permOwner) || player.getName().equalsIgnoreCase(letter.getName())) {
 		    continue;
 		}
-		// Player <letter> put region <id> up for rent, for <cost> per <time>.
-		SelfServiceMessage.sendFormatedMessage(player, MessageKey.up_for_rent_player, letter.getName(), regionId, format(costPerTime), time);
+		player.sendMessage(msg);
 		// You are owner of this region.
-		SelfServiceMessage.sendMessage(player, MessageKey.owner_of_region);
-		SelfServiceMessage.sendFormatedMessage(player, sharedProfits ? MessageKey.rent_profits_shared : MessageKey.rent_profits_single, ownerNames);
+		player.sendMessage(ChatColor.GREEN + "You are owner of this region.");
+		player.sendMessage(msg2);
 	    }
 	} else if (members != null) {
 	    for (UUID memberUUID : members) {
@@ -301,12 +314,14 @@ public class Messages {
 		if (player == null || !player.isOnline() || !player.hasPermission(permMember) || player.getName().equalsIgnoreCase(letter.getName())) {
 		    continue;
 		}
-		// Player <letter> put region <id> up for rent, for <cost> per <time>.
-		SelfServiceMessage.sendFormatedMessage(player, MessageKey.up_for_rent_player, letter.getName(), regionId, format(costPerTime), time);
+		player.sendMessage(msg);
 		// You are member of this region.
-		SelfServiceMessage.sendMessage(player, MessageKey.member_of_region);
+		player.sendMessage(ChatColor.GREEN + "You are member of this region.");
 	    }
+	} else {
+	    System.out.println("owner + member == null");
 	}
+	
     }
     
     /*
@@ -322,7 +337,10 @@ public class Messages {
 	String permMember = Permission.INFORM_MEMBER_REMOVED;
 	
 	// Region <id> removed.
-	SelfServiceMessage.sendFormatedMessage(remover, MessageKey.region_removed, regionId);
+	remover.sendMessage(ChatColor.YELLOW + "Region " + ChatColor.WHITE + regionId + ChatColor.YELLOW + " removed.");
+	
+	// Player <remover> removed region <id>.
+	String msg = ChatColor.GREEN + "Player " + ChatColor.WHITE + remover.getName() + ChatColor.GREEN + " removed region " + ChatColor.WHITE + regionId + ChatColor.GREEN + ".";
 	
 	if (owners != null && !owners.isEmpty()) {
 	    if (owners.size() > 1) {
@@ -332,13 +350,13 @@ public class Messages {
 			continue;
 		    }
 		    if (player.getName().equalsIgnoreCase(remover.getName())) {
-			// Player <remover> removed region <id>
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.region_removed_player, remover.getName(), regionId);
+			player.sendMessage(msg);
 		    }
-		    SelfServiceMessage.sendMessage(player, MessageKey.owner_of_region_past);
+		    player.sendMessage(ChatColor.GREEN + "You were owner of that region.");
 		    if (refund > 0) {
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.sharing_refund_with, format(refund), ownerNames);
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.received_equal_share_of, formatShare(refund, owners));
+			player.sendMessage(ChatColor.GREEN + "So you're sharing the refund of " + ChatColor.WHITE + format(refund));
+			player.sendMessage(ChatColor.GREEN + "with " + ChatColor.WHITE + ownerNames);
+			player.sendMessage(ChatColor.GREEN + "You all received an equal share of " + ChatColor.WHITE + formatShare(refund, owners));
 		    }
 		    
 		}
@@ -346,12 +364,11 @@ public class Messages {
 		Player player = Bukkit.getPlayer(owners.iterator().next());
 		if (player != null && player.isOnline() && player.hasPermission(permOwner)) {
 		    if (player.getName().equalsIgnoreCase(remover.getName())) {
-			// Player <remover> removed region <id>
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.region_removed_player, remover.getName(), regionId);
+			player.sendMessage(msg);
 		    }
-		    SelfServiceMessage.sendMessage(player, MessageKey.owner_of_region_past);
+		    player.sendMessage(ChatColor.GREEN + "You were owner of that region. ");
 		    if (refund > 0) {
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.received_refund, format(refund));
+			player.sendMessage(ChatColor.GREEN + "So you received the refund of " + ChatColor.WHITE + format(refund));
 		    }
 		}
 		
@@ -363,9 +380,8 @@ public class Messages {
 		if (player == null || !player.isOnline() || !player.hasPermission(permMember)) {
 		    continue;
 		}
-		// Player <remover> removed region <id>
-		SelfServiceMessage.sendFormatedMessage(player, MessageKey.region_removed_player, remover.getName(), regionId);
-		SelfServiceMessage.sendMessage(player, MessageKey.member_of_region_past);
+		player.sendMessage(msg);
+		player.sendMessage(ChatColor.GREEN + "You were member of that region.");
 	    }
 	}
 	
@@ -404,12 +420,16 @@ public class Messages {
 	String oldSize = formatSize(oldWidth, oldLength, oldHeight);
 	String newSize = formatSize(newWidth, newLength, newHeight);
 	
-	Player resizer = Bukkit.getPlayer(resizerUUID);
+	String msg = ChatColor.GREEN + "You ";
 	if (cost > 0) {
-	    SelfServiceMessage.sendFormatedMessage(resizer, MessageKey.resize_region_pay, format(cost), regionId, oldSize, newSize);
-	} else {
-	    SelfServiceMessage.sendFormatedMessage(resizer, MessageKey.resize_region, regionId, oldSize, newSize);
+	    msg += "payed " + ChatColor.WHITE + format(cost) + ChatColor.GREEN + " and ";
 	}
+	msg += "resized region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " from " + ChatColor.WHITE + oldSize + ChatColor.GREEN + " to " + ChatColor.WHITE + newSize + ChatColor.GREEN + ".";
+	
+	Player resizer = Bukkit.getPlayer(resizerUUID);
+	resizer.sendMessage(msg);
+	
+	String resizeMsg = getResizeMessage(resizer.getName(), regionId, oldSize, newSize);
 	
 	if (owners != null) {
 	    for (UUID ownerUUID : owners) {
@@ -418,9 +438,9 @@ public class Messages {
 		    continue;
 		}
 		if (!player.getName().equalsIgnoreCase(resizer.getName())) {
-		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.resize_region_player, resizer.getName(), regionId, oldSize, newSize);
+		    player.sendMessage(resizeMsg);
 		}
-		SelfServiceMessage.sendMessage(player, MessageKey.owner_of_region);
+		player.sendMessage(ChatColor.GREEN + "You are owner of that region.");
 	    }
 	    
 	} else if (members != null) {
@@ -430,11 +450,12 @@ public class Messages {
 		    continue;
 		}
 		if (!player.getName().equalsIgnoreCase(resizer.getName())) {
-		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.resize_region_player, resizer.getName(), regionId, oldSize, newSize);
+		    player.sendMessage(resizeMsg);
 		}
-		SelfServiceMessage.sendMessage(player, MessageKey.member_of_region);
+		player.sendMessage(ChatColor.GREEN + "You are member of that region.");
 	    }
 	}
+	
     }
     
     public void resized_smaller(UUID resizerUUID, Set<UUID> owners, Set<UUID> members, String regionId, double refund, int oldWidth, int oldLength, int oldHeight, int newWidth, int newLength, int newHeight) {
@@ -447,7 +468,9 @@ public class Messages {
 	String newSize = formatSize(newWidth, newLength, newHeight);
 	
 	Player resizer = Bukkit.getPlayer(resizerUUID);
-	SelfServiceMessage.sendFormatedMessage(resizer, MessageKey.resize_region, regionId, oldSize, newSize);
+	resizer.sendMessage(ChatColor.GREEN + "Resized region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " from " + ChatColor.WHITE + oldSize + ChatColor.GREEN + " to " + ChatColor.WHITE + newSize + ChatColor.GREEN + ".");
+	
+	String msg = getResizeMessage(resizer.getName(), regionId, oldSize, newSize);
 	
 	if (owners != null) {
 	    if (owners.size() > 1) {
@@ -457,22 +480,23 @@ public class Messages {
 			continue;
 		    }
 		    if (!player.getName().equalsIgnoreCase(resizer.getName())) {
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.resize_region_player, resizer.getName(), regionId, oldSize, newSize);
+			player.sendMessage(msg);
 		    }
-		    SelfServiceMessage.sendMessage(player, MessageKey.owner_of_region);
+		    player.sendMessage(ChatColor.GREEN + "You are owner of that region.");
 		    if (refund != 0) {
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.sharing_refund_with, format(Math.abs(refund)), ownerNames);
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.received_equal_share_of, formatShare(Math.abs(refund), owners));
+			player.sendMessage(ChatColor.GREEN + "Sharing the refund of " + ChatColor.WHITE + format(Math.abs(refund)) + ChatColor.GREEN + " with " + ChatColor.WHITE + ownerNames + ChatColor.GREEN + ".");
+			player.sendMessage(ChatColor.GREEN + "You all got an equal share of " + ChatColor.WHITE + formatShare(Math.abs(refund), owners));
 		    }
+		    
 		}
 	    } else {
 		Player player = Bukkit.getPlayer(owners.iterator().next());
 		if (player != null && player.isOnline() && player.hasPermission(permOwner)) {
 		    if (!player.getName().equalsIgnoreCase(resizer.getName())) {
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.resize_region_player, resizer.getName(), regionId, oldSize, newSize);
+			player.sendMessage(msg);
 		    }
 		    if (refund != 0) {
-			SelfServiceMessage.sendFormatedMessage(player, MessageKey.received_refund, format(Math.abs(refund)));
+			player.sendMessage(ChatColor.GREEN + "You received a refund of " + ChatColor.WHITE + format(Math.abs(refund)));
 		    }
 		}
 	    }
@@ -484,11 +508,16 @@ public class Messages {
 		    continue;
 		}
 		if (!player.getName().equalsIgnoreCase(resizer.getName())) {
-		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.resize_region_player, resizer.getName(), regionId, oldSize, newSize);
+		    player.sendMessage(msg);
 		}
-		SelfServiceMessage.sendMessage(player, MessageKey.member_of_region);
+		player.sendMessage(ChatColor.GREEN + "You are member of that region.");
 	    }
 	}
+	
+    }
+    
+    private String getResizeMessage(String resizerName, String regionId, String oldSize, String newSize) {
+	return ChatColor.GREEN + "Player " + ChatColor.WHITE + resizerName + ChatColor.GREEN + " resized region " + ChatColor.WHITE + regionId + ChatColor.GREEN + " from " + ChatColor.WHITE + oldSize + ChatColor.GREEN + " to " + ChatColor.WHITE + newSize + ChatColor.GREEN + ".";
     }
     
     private String formatSize(int width, int length, int height) {
@@ -505,6 +534,7 @@ public class Messages {
 	} else {
 	    return cost / ownerUUIDs.size();
 	}
+	
     }
     
     private String toUserfriendlyString(Set<UUID> uuids) {

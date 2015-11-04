@@ -4,10 +4,6 @@ public class SignException extends Exception {
     
     private static final long serialVersionUID = -8873444657185085651L;
     
-    public SignException() {
-	
-    }
-    
     public SignException(String msg) {
 	super(msg);
     }

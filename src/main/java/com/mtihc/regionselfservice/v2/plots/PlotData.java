@@ -36,7 +36,6 @@ public class PlotData implements ConfigurationSerializable {
 		setSign(data);
 	    }
 	}
-	
     }
     
     public PlotData(Map<String, Object> values) {

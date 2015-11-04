@@ -16,6 +16,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
+
 
 /**
  * Class representing a command.
@@ -169,7 +172,7 @@ public class SimpleCommand implements ICommand {
     
     public void testPermission(CommandSender sender, String permission) throws CommandPermissionException {
 	if (permission != null && !sender.hasPermission(permission)) {
-	    throw new CommandPermissionException("You're not allowed to execute command /" + getUniqueLabel() + ".");
+	    throw new CommandPermissionException(SelfServiceMessage.getFormatedMessage(MessageKey.error_no_perm_command, getUniqueLabel()));
 	}
 	
     }
@@ -211,8 +214,8 @@ public class SimpleCommand implements ICommand {
 	    return;
 	} catch (NumberFormatException e) {
 	    String lbl = getUniqueLabel();
-	    sender.sendMessage(ChatColor.RED + "Unknown command: " + ChatColor.WHITE + "/" + lbl + " " + args[0]);
-	    throw new CommandException("To get command help, type: " + ChatColor.WHITE + "/" + lbl + " ?");
+	    SelfServiceMessage.sendFormatedMessage(sender, MessageKey.error_unknown_command, lbl, args[0]);
+	    throw new CommandException(SelfServiceMessage.getFormatedMessage(MessageKey.error_get_cmd_help, lbl));
 	}
 	sendHelp(sender, this, page);
     }
@@ -560,6 +563,5 @@ public class SimpleCommand implements ICommand {
 	public boolean hasNested() {
 	    return false;
 	}
-	
     }
 }

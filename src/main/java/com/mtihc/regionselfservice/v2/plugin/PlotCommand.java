@@ -1,7 +1,6 @@
 package com.mtihc.regionselfservice.v2.plugin;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -13,6 +12,7 @@ import com.mtihc.regionselfservice.v2.plots.PlotData;
 import com.mtihc.regionselfservice.v2.plots.PlotManager;
 import com.mtihc.regionselfservice.v2.plots.PlotWorld;
 import com.mtihc.regionselfservice.v2.plots.exceptions.PlotControlException;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
 import com.mtihc.regionselfservice.v2.plugin.util.commands.Command;
 import com.mtihc.regionselfservice.v2.plugin.util.commands.CommandException;
 import com.mtihc.regionselfservice.v2.plugin.util.commands.ICommand;
@@ -80,7 +80,7 @@ public class PlotCommand extends SimpleCommand {
 		playerName = player.getName();
 	    } else {
 		// sender is not player, so no player found
-		throw new CommandException("Incorrect number of arguments. Expected player name.");
+		throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_player_name));
 	    }
 	}
 	
@@ -94,7 +94,7 @@ public class PlotCommand extends SimpleCommand {
 	
 	if (player == null) {
 	    // still no player found
-	    throw new CommandException("Player " + "'" + playerName + "'" + " doesn't exist.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_player_name));
 	}
 	// we have a player
 	
@@ -110,14 +110,14 @@ public class PlotCommand extends SimpleCommand {
 		world = ((Player) sender).getWorld();
 		worldName = world.getName();
 	    } else {
-		throw new CommandException("Incorrect number of arguments. Expected world name.");
+		throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 	    }
 	}
 	
 	if (world == null) {
 	    world = sender.getServer().getWorld(worldName);
 	    if (world == null) {
-		throw new CommandException("World " + "'" + worldName + "'" + " doesn't exist.");
+		throw new CommandException(SelfServiceMessage.getFormatedMessage(MessageKey.error_world_not_exists, worldName));
 	    }
 	}
 	
@@ -133,11 +133,11 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    regionId = args[0];
 	} catch (Exception e) {
-	    throw new CommandException("Expected a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	if (args.length > 1) {
-	    throw new CommandException("Expected only a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	try {
@@ -156,14 +156,14 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    regionId = args[0];
 	} catch (Exception e) {
-	    throw new CommandException("Expected a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	int bottomY;
 	try {
 	    bottomY = Integer.parseInt(args[1]);
 	} catch (NumberFormatException e) {
-	    throw new CommandException("Expected a number instead of text for the bottom-y coordinate..");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_number));
 	} catch (Exception e) {
 	    bottomY = -1;
 	}
@@ -172,7 +172,7 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    topY = Integer.parseInt(args[2]);
 	} catch (NumberFormatException e) {
-	    throw new CommandException("Expected a number instead of text for the top-y coordinate.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_number));
 	} catch (Exception e) {
 	    topY = -1;
 	}
@@ -193,11 +193,11 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    regionId = args[0];
 	} catch (Exception e) {
-	    throw new CommandException("Expected a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	if (args.length > 1) {
-	    throw new CommandException("Expected only a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	try {
@@ -216,14 +216,14 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    regionId = args[0];
 	} catch (Exception e) {
-	    throw new CommandException("Expected a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	int bottomY;
 	try {
 	    bottomY = Integer.parseInt(args[1]);
 	} catch (NumberFormatException e) {
-	    throw new CommandException("Expected a number instead of text for the bottom-y coordinate..");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_number));
 	} catch (Exception e) {
 	    bottomY = -1;
 	}
@@ -232,7 +232,7 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    topY = Integer.parseInt(args[2]);
 	} catch (NumberFormatException e) {
-	    throw new CommandException("Expected a number instead of text for the top-y coordinate.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_number));
 	} catch (Exception e) {
 	    topY = -1;
 	}
@@ -252,7 +252,7 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    regionId = args[0];
 	} catch (Exception e) {
-	    throw new CommandException("Expected a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	World world = null;
@@ -264,14 +264,14 @@ public class PlotCommand extends SimpleCommand {
 	    }
 	    
 	    if (args.length > 2) {
-		throw new CommandException("Expceted only a region id. And optionally a world name.");
+		throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 	    }
 	    
 	}
 	
 	if (world == null) {
 	    if (!(sender instanceof Player)) {
-		throw new CommandException("Expected a region id and world name.");
+		throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 	    }
 	    world = ((Player) sender).getWorld();
 	}
@@ -290,7 +290,7 @@ public class PlotCommand extends SimpleCommand {
 	try {
 	    regionId = args[0];
 	} catch (Exception e) {
-	    throw new CommandException("Expected a region id.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id));
 	}
 	
 	World world = null;
@@ -302,14 +302,14 @@ public class PlotCommand extends SimpleCommand {
 	    }
 	    
 	    if (args.length > 2) {
-		throw new CommandException("Expceted only a region id. And optionally a world name.");
+		throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 	    }
 	    
 	}
 	
 	if (world == null) {
 	    if (!(sender instanceof Player)) {
-		throw new CommandException("Expected a region id and world name.");
+		throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_expected_region_id) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 	    }
 	    world = ((Player) sender).getWorld();
 	}
@@ -327,11 +327,11 @@ public class PlotCommand extends SimpleCommand {
     public void reload(CommandSender sender, String[] args) throws CommandException {
 	
 	if (args != null && args.length != 0) {
-	    throw new CommandException("Expected no arguments.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments));
 	}
 	
 	this.mgr.getPlugin().reloadConfig();
-	sender.sendMessage(ChatColor.GREEN + "Configuration reloaded.");
+	SelfServiceMessage.sendMessage(sender, MessageKey.config_reload);
     }
     
     @Command(aliases = {"rent"}, args = "", desc = "Rent a region", help = {""}, perm = Permission.RENT)
@@ -359,7 +359,7 @@ public class PlotCommand extends SimpleCommand {
 	    // try to get argument 1 (width or money)
 	    arg1 = Double.parseDouble(args[0]);
 	} catch (IndexOutOfBoundsException e) {
-	    throw new CommandException("Incorrect number of arguments. Expected at least 1 number or a region name.");
+	    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments));
 	} catch (NumberFormatException e) {
 	    // argument 1 is not a number, so it must be a region name
 	    String regionName = args[0];
@@ -370,7 +370,7 @@ public class PlotCommand extends SimpleCommand {
 		worldName = args[1];
 		world = sender.getServer().getWorld(worldName);
 		if (world == null) {
-		    throw new CommandException("World '" + world + "' doesn't exist.");
+		    throw new CommandException(SelfServiceMessage.getFormatedMessage(MessageKey.error_world_not_exists, worldName));
 		}
 	    } catch (IndexOutOfBoundsException exception) {
 		// no world argument defined
@@ -380,7 +380,7 @@ public class PlotCommand extends SimpleCommand {
 		    worldName = world.getName();
 		} else {
 		    // if not player, send error message
-		    throw new CommandException("Incorrect number or arguments. Expected world name.");
+		    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 		}
 		
 	    }
@@ -409,7 +409,7 @@ public class PlotCommand extends SimpleCommand {
 		worldName = args[1];
 		world = sender.getServer().getWorld(worldName);
 		if (world == null) {
-		    throw new CommandException("World '" + world + "' doesn't exist.");
+		    throw new CommandException(SelfServiceMessage.getFormatedMessage(MessageKey.error_world_not_exists, worldName));
 		}
 	    } catch (IndexOutOfBoundsException exception) {
 		// no world argument defined
@@ -419,7 +419,7 @@ public class PlotCommand extends SimpleCommand {
 		    worldName = world.getName();
 		} else {
 		    // if not player, send error message
-		    throw new CommandException("Incorrect number or arguments. Expected world name.");
+		    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 		}
 		
 	    }
@@ -436,7 +436,7 @@ public class PlotCommand extends SimpleCommand {
 		worldName = args[1];
 		world = sender.getServer().getWorld(worldName);
 		if (world == null) {
-		    throw new CommandException("World '" + world + "' doesn't exist.");
+		    throw new CommandException(SelfServiceMessage.getFormatedMessage(MessageKey.error_world_not_exists, worldName));
 		}
 	    } catch (IndexOutOfBoundsException exception) {
 		// no world argument defined
@@ -446,7 +446,7 @@ public class PlotCommand extends SimpleCommand {
 		    worldName = world.getName();
 		} else {
 		    // if not player, send error message
-		    throw new CommandException("Incorrect number or arguments. Expected world name.");
+		    throw new CommandException(SelfServiceMessage.getMessage(MessageKey.error_invalid_arguments) + " " + SelfServiceMessage.getMessage(MessageKey.error_expected_world_name));
 		}
 		
 	    }

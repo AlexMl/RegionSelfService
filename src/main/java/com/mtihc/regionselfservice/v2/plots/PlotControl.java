@@ -31,6 +31,8 @@ import com.mtihc.regionselfservice.v2.plots.signs.ForRentSign;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForRentSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignType;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
 import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 import com.sk89q.worldedit.bukkit.selections.Selection;
 import com.sk89q.worldguard.LocalPlayer;
@@ -46,7 +48,7 @@ import com.sk89q.worldguard.protection.regions.RegionType;
 
 /*
  * INFO:
- *  Worldguard uses playernames and player uuids parallel! Both sets are redundant and not synced!
+ * Worldguard uses playernames and player uuids parallel! Both sets are redundant and not synced!
  */
 public class PlotControl {
     
@@ -70,8 +72,6 @@ public class PlotControl {
 	    // when player is online, use WorldGuard's method of counting regions
 	    return regionManager.getRegionCountOfPlayer(this.mgr.getWorldGuard().wrapOfflinePlayer(player));
 	}
-	
-	// player is offline
 	
 	// get all regions
 	Collection<ProtectedRegion> regions = regionManager.getRegions().values();
@@ -111,8 +111,7 @@ public class PlotControl {
 	// get targeted block
 	Block block = player.getTargetBlock(getInvisibleMaterials(), 8);
 	
-	// check if block is a wooden sign,
-	// return null otherwise
+	// check if block is a wooden sign, return null otherwise
 	if (block.getState() instanceof Sign) {
 	    return (Sign) block.getState();
 	} else {
@@ -124,15 +123,14 @@ public class PlotControl {
     private void checkRegionCount(Player player, PlotWorld world) throws PlotControlException {
 	
 	//
-	// Check if player has too many regions
-	// or special permission
+	// Check if player has too many regions or special permission
 	//
 	int regionCount = getRegionCountOfPlayer(world.getWorld(), player.getUniqueId());
 	int regionMax = world.getConfig().getMaxRegionCount();
 	boolean bypassMax = player.hasPermission(Permission.BYPASSMAX_REGIONS);
 	
 	if (!bypassMax && regionCount >= regionMax) {
-	    throw new PlotControlException("You already own " + regionCount + " regions (max: " + regionMax + ").");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_to_much_regions, regionCount, regionMax));
 	}
 	
     }
@@ -141,7 +139,7 @@ public class PlotControl {
 	// get targeted sign
 	Sign sign = getTargetSign(player);
 	if (sign == null) {
-	    throw new PlotControlException("You're not looking at a wooden sign.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_no_sign));
 	}
 	
 	BlockVector coords = sign.getLocation().toVector().toBlockVector();
@@ -154,7 +152,7 @@ public class PlotControl {
 	    // the sign should probably have the region name on the last 2 lines
 	    plot = plotWorld.getPlot(sign);
 	} catch (SignException e) {
-	    throw new PlotControlException("You're not looking at a valid sign: " + e.getMessage(), e);
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_no_valid_sign_looking, e.getMessage()), e);
 	}
 	
 	if (plot != null) {
@@ -162,32 +160,32 @@ public class PlotControl {
 	    // The plot-data was probably deleted.
 	    plotSign = (IPlotSign) plot.getSign(coords);
 	} else {
-	    throw new PlotControlException("Couldn't find plot information.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_no_plotinfo));
 	}
 	
 	if (plotSign == null) {
-	    throw new PlotControlException("Couldn't find plot-sign information.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_no_plotinfo));
 	}
 	
 	if (plotSign.getType() != PlotSignType.FOR_SALE) {
 	    // plot-sign is not a for-sale sign
-	    throw new PlotControlException("You're not looking at a for-sale sign.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_looking_wrong_sign));
 	}
 	
 	// get ProtectedRegion
 	final ProtectedRegion region = plot.getRegion();
 	if (region == null) {
-	    throw new PlotControlException("Sorry, the region doesn't exist anymore.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_exists, plot.getRegionId()));
 	}
 	
 	// not for sale?
 	if (!plot.isForSale()) {
-	    throw new PlotControlException("Sorry, region \"" + plot.getRegionId() + "\" isn't for sale. This is probably an old sign.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_for_sale, plot.getRegionId()));
 	}
 	
 	// already owner?
 	if (region.isOwner(this.mgr.getWorldGuard().wrapPlayer(player))) {
-	    throw new PlotControlException("You already own this region.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_already_own_region));
 	}
 	
 	checkRegionCount(player, plotWorld);
@@ -203,7 +201,7 @@ public class PlotControl {
 	//
 	boolean reserve = plotWorld.getConfig().isReserveFreeRegionsEnabled();
 	if (reserve && (cost <= 0) && (regionCount > 0)) {
-	    throw new PlotControlException("Free regions are reserved for new players.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_region_reserved));
 	}
 	
 	//
@@ -212,17 +210,17 @@ public class PlotControl {
 	//
 	
 	final Set<UUID> ownerUUIDs = region.getOwners().getUniqueIds();
-	// System.out.println("o:" + region.getOwners().toString());
+	
 	if (reserve) {
-	    
 	    Set<UUID> homeless = plotWorld.getPotentialHomeless(ownerUUIDs);
+	    
 	    if (!homeless.isEmpty()) {
 		String homelessString = "";
 		for (UUID playerUUID : homeless) {
 		    homelessString += ", " + PlayerUUIDConverter.toPlayerName(playerUUID); // convert from uuid to player names
 		}
 		homelessString = homelessString.substring(2);// remove comma and space
-		throw new PlotControlException("Sorry, you can't buy this region. The following players would become homeless: " + homelessString);
+		throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_can_not_buy) + " " + SelfServiceMessage.getFormatedMessage(MessageKey.error_people_get_homeless, homelessString));
 	    }
 	}
 	
@@ -231,11 +229,11 @@ public class PlotControl {
 	final boolean bypassCost = player.hasPermission(Permission.BUY_BYPASSCOST);
 	double balance = this.mgr.getEconomy().getBalance(player);
 	if (!bypassCost && cost > balance) {
-	    throw new PlotControlException("You only have " + this.mgr.getEconomy().format(balance) + ". You still require " + this.mgr.getEconomy().format(cost - balance) + ".");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_not_enough_money, this.mgr.getEconomy().format(balance), this.mgr.getEconomy().format(cost - balance)));
 	}
 	
 	if (plot.hasRenters()) {
-	    throw new PlotControlException("You can't buy this region. The current owner is still renting it out to other players.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_can_not_buy) + " " + SelfServiceMessage.getMessage(MessageKey.error_still_renting));
 	}
 	
 	// create YesNoPrompt
@@ -286,8 +284,7 @@ public class PlotControl {
 		try {
 		    plotWorld.getRegionManager().save();
 		} catch (StorageException e) {
-		    String msg = "Failed to save region changes to world \"" + plotWorld.getName() + "\", using WorldGuard.";
-		    PlotControl.this.mgr.getPlugin().getLogger().log(Level.WARNING, ChatColor.RED + msg, e);
+		    PlotControl.this.mgr.getPlugin().getLogger().log(Level.WARNING, ChatColor.RED + "Failed to save region changes to world \"" + plotWorld.getName() + "\", using WorldGuard.", e);
 		}
 		
 		// break all for sale signs
@@ -308,16 +305,16 @@ public class PlotControl {
 	    
 	    @Override
 	    protected Prompt onNo() {
-		player.sendMessage(ChatColor.RED + "Did not buy region " + plot.getRegionId() + ".");
+		SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_not_bought, plot.getRegionId());
 		return Prompt.END_OF_CONVERSATION;
 	    }
 	};
 	
 	// ask the question
 	if (bypassCost) {
-	    player.sendMessage(ChatColor.GREEN + "You have permission to skip payment. " + "The owners still receive money.");
+	    SelfServiceMessage.sendMessage(player, MessageKey.player_has_perm_skip_pay);
 	}
-	player.sendMessage(ChatColor.GREEN + "Are you sure you want to buy region " + ChatColor.WHITE + region.getId() + ChatColor.GREEN + " for " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + "?");
+	SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_buy, region.getId(), this.mgr.getEconomy().format(cost));
 	// prompt for yes or no
 	new ConversationFactory(this.mgr.getPlugin()).withFirstPrompt(prompt).withLocalEcho(false).withModality(false).buildConversation(player).begin();
 	
@@ -327,7 +324,7 @@ public class PlotControl {
 	// get targeted sign
 	final Sign sign = getTargetSign(player);
 	if (sign == null) {
-	    throw new PlotControlException("You're not looking at a wooden sign.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_no_sign));
 	}
 	
 	BlockVector coords = sign.getLocation().toVector().toBlockVector();
@@ -340,7 +337,7 @@ public class PlotControl {
 	    // the sign should probably have the region name on the last 2 lines
 	    plot = plotWorld.getPlot(sign);
 	} catch (SignException e) {
-	    throw new PlotControlException("You're not looking at a valid sign: " + e.getMessage(), e);
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_no_valid_sign_looking, e.getMessage()), e);
 	}
 	
 	if (plot != null) {
@@ -348,28 +345,28 @@ public class PlotControl {
 	    // The plot-data was probably deleted.
 	    plotSign = (IPlotSign) plot.getSign(coords);
 	} else {
-	    throw new PlotControlException("Couldn't find plot information.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_no_plotinfo));
 	}
 	
 	if (plotSign == null) {
-	    throw new PlotControlException("Couldn't find plot-sign information.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_no_plotinfo));
 	}
 	
 	if (plotSign.getType() != PlotSignType.FOR_RENT) {
 	    // plot-sign is not a for-rent sign
-	    throw new PlotControlException("You're not looking at a for-rent sign.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_looking_wrong_sign));
 	}
 	
 	// get ProtectedRegion
 	final ProtectedRegion region = plot.getRegion();
 	if (region == null) {
-	    throw new PlotControlException("Sorry, the region doesn't exist anymore.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_exists, plot.getRegionId()));
 	}
 	
 	// not for rent
 	// this check is probably not even needed
 	if (!plot.isForRent()) {
-	    throw new PlotControlException("Sorry, region \"" + plot.getRegionId() + "\" isn't for rent. This is probably an old sign.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_for_rent, plot.getRegionId()));
 	}
 	
 	// check if(rentSign.getRentPlayer() == player.getName())
@@ -386,7 +383,7 @@ public class PlotControl {
 	    if (rentSign.isRentedOut()) {
 		if (!player.getUniqueId().equals(rentSign.getRentPlayerUUID())) {
 		    // can't extend time via this sign
-		    throw new PlotControlException("You're already member of this region. And you can't extend your rent time via this sign.");
+		    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_already_member_region) + " " + SelfServiceMessage.getMessage(MessageKey.error_can_not_extend_sign));
 		} else {
 		    // extending time
 		    
@@ -396,11 +393,11 @@ public class PlotControl {
 		    // check if it's too soon
 		    if (remainingTime > allowExtendAtRemaining) {
 			// too soon to extend rent time
-			throw new PlotControlException("You can't extend the rent time yet. You have to wait " + new TimeStringConverter().convert(remainingTime - allowExtendAtRemaining) + ".");
+			throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_can_not_extend_yet, new TimeStringConverter().convert(remainingTime - allowExtendAtRemaining)));
 		    }
 		}
 	    } else {
-		throw new PlotControlException("You're already member of this region.");
+		throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_already_member_region));
 	    }
 	}
 	
@@ -418,7 +415,7 @@ public class PlotControl {
 	final boolean bypassCost = player.hasPermission(Permission.RENT_BYPASSCOST);
 	double balance = this.mgr.getEconomy().getBalance(player);
 	if (!bypassCost && cost > balance) {
-	    throw new PlotControlException("You only have " + this.mgr.getEconomy().format(balance) + ". You still require " + this.mgr.getEconomy().format(cost - balance) + ".");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_not_enough_money, this.mgr.getEconomy().format(balance), this.mgr.getEconomy().format(cost - balance)));
 	}
 	
 	// create YesNoPrompt
@@ -452,8 +449,7 @@ public class PlotControl {
 		try {
 		    plotWorld.getRegionManager().save();
 		} catch (StorageException e) {
-		    String msg = "Failed to save region changes to world \"" + plotWorld.getName() + "\", using WorldGuard.";
-		    PlotControl.this.mgr.getPlugin().getLogger().log(Level.WARNING, ChatColor.RED + msg, e);
+		    PlotControl.this.mgr.getPlugin().getLogger().log(Level.WARNING, ChatColor.RED + "Failed to save region changes to world \"" + plotWorld.getName() + "\", using WorldGuard.", e);
 		}
 		
 		// put player's name on the sign...
@@ -482,9 +478,9 @@ public class PlotControl {
 	    @Override
 	    protected Prompt onNo() {
 		if (remainingTime > 0) {
-		    player.sendMessage(ChatColor.RED + "Did not extend rent time of region " + plot.getRegionId() + ".");
+		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_not_extend_renttime, plot.getRegionId());
 		} else {
-		    player.sendMessage(ChatColor.RED + "Did not rent region " + plot.getRegionId() + ".");
+		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_not_rented, plot.getRegionId());
 		}
 		return Prompt.END_OF_CONVERSATION;
 	    }
@@ -492,13 +488,13 @@ public class PlotControl {
 	
 	// ask the question
 	if (bypassCost) {
-	    player.sendMessage(ChatColor.GREEN + "You have permission to skip payment. " + "The owners still receive money.");
+	    SelfServiceMessage.sendMessage(player, MessageKey.player_has_perm_skip_pay);
 	}
 	
 	if (remainingTime > 0) {
-	    player.sendMessage(ChatColor.GREEN + "Are you sure you want to pay " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + " to extend the rent time of region " + ChatColor.WHITE + region.getId() + ChatColor.GREEN + " with " + ChatColor.WHITE + timeString + ChatColor.GREEN + "?");
+	    SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_rent_extend, this.mgr.getEconomy().format(cost), region.getId(), timeString);
 	} else {
-	    player.sendMessage(ChatColor.GREEN + "Are you sure you want to pay " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + " to rent region " + ChatColor.WHITE + region.getId() + ChatColor.GREEN + " for " + ChatColor.WHITE + timeString + ChatColor.GREEN + "?");
+	    SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_rent, this.mgr.getEconomy().format(cost), region.getId(), timeString);
 	}
 	
 	// prompt for yes or no
@@ -508,7 +504,7 @@ public class PlotControl {
     private Selection getSelection(Player player) throws PlotControlException {
 	Selection sel = this.mgr.getWorldEdit().getSelection(player);
 	if (sel == null || sel.getMaximumPoint() == null || sel.getMinimumPoint() == null) {
-	    throw new PlotControlException("Select a region first. Use WorldEdit's command: " + ChatColor.LIGHT_PURPLE + "//wand");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_selection_first));
 	}
 	return sel;
     }
@@ -592,7 +588,7 @@ public class PlotControl {
 	boolean allowOverlap = plotWorld.getConfig().isOverlapUnownedRegionAllowed();
 	if (!allowOverlap && overlapsUnownedRegion(region, plotWorld.getWorld(), player)) {
 	    // overlapping is not allowed
-	    throw new PlotControlException("Your selection overlaps with someone else's region.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_selection_overlaps));
 	} else {
 	    // not overlapping or it's allowed to overlap
 	    
@@ -608,7 +604,7 @@ public class PlotControl {
 		    if (!allowAnywhere) {
 			// automatic parent was not found, but it's required...
 			// because player can only create regions inside owned existing regions.
-			throw new PlotControlException("You can only claim regions inside existing regions that you own");
+			throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_region_create_not_allowed));
 		    }
 		} else if (doAutomaticParent) {
 		    // found parent region, and according to the configuration,
@@ -653,11 +649,11 @@ public class PlotControl {
 	
 	// check region existance
 	if (regionManager.hasRegion(regionId)) {
-	    throw new PlotControlException("Region \"" + regionId + "\" already exists.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_already_exists, regionId));
 	}
 	// check if valid region name, just like WorldGuard
 	if (!isValidRegionName(regionId)) {
-	    throw new PlotControlException("Invalid region name \"" + regionId + "\". Try a different name.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_invalid_name, regionId));
 	}
 	
 	// create region
@@ -669,7 +665,7 @@ public class PlotControl {
 	// check balance
 	double balance = this.mgr.getEconomy().getBalance(player);
 	if (enableCost && balance < cost) {
-	    throw new PlotControlException(ChatColor.RED + "You can't afford to create region " + ChatColor.WHITE + regionId + ChatColor.RED + ". You only have " + ChatColor.WHITE + this.mgr.getEconomy().format(balance) + ChatColor.RED + ", but it costs " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.RED + ".");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_not_enough_money, this.mgr.getEconomy().format(balance), this.mgr.getEconomy().format(cost)));
 	}
 	
 	// get default owners from config
@@ -694,7 +690,7 @@ public class PlotControl {
 		    try {
 			PlotControl.this.mgr.getEconomy().withdraw(player, cost);
 		    } catch (EconomyException e) {
-			player.sendMessage(ChatColor.RED + "Failed to pay for the region: " + e.getMessage());
+			SelfServiceMessage.sendFormatedMessage(player, MessageKey.error_region_pay, e.getMessage());
 			return Prompt.END_OF_CONVERSATION;
 		    }
 		}
@@ -704,7 +700,7 @@ public class PlotControl {
 		    regionManager.addRegion(region);
 		    regionManager.save();
 		} catch (StorageException e) {
-		    player.sendMessage(ChatColor.RED + "Failed to save new region with id \"" + region.getId() + "\": " + e.getMessage());
+		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.error_region_saved, regionId, e.getMessage());
 		    return Prompt.END_OF_CONVERSATION;
 		}
 		// send region info to indicate it was successful
@@ -714,7 +710,7 @@ public class PlotControl {
 	    
 	    @Override
 	    protected Prompt onNo() {
-		player.sendMessage(ChatColor.RED + "Did not create a region.");
+		SelfServiceMessage.sendMessage(player, MessageKey.player_not_create);
 		return Prompt.END_OF_CONVERSATION;
 	    }
 	};
@@ -728,8 +724,7 @@ public class PlotControl {
 	    checkRegionCount(player, plotWorld);
 	    ownersDomain.addPlayer(player.getUniqueId());
 	    // ask question
-	    player.sendMessage(ChatColor.GREEN + "Are you sure you want to pay " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + ", ");
-	    player.sendMessage(ChatColor.GREEN + "and create region '" + ChatColor.WHITE + region.getId() + ChatColor.GREEN + "?");
+	    SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_create, this.mgr.getEconomy().format(cost), region.getId());
 	    
 	    // run YesNoPrompt
 	    new ConversationFactory(this.mgr.getPlugin()).withLocalEcho(false).withModality(false).withFirstPrompt(prompt).buildConversation(player).begin();
@@ -752,7 +747,6 @@ public class PlotControl {
 	    // save
 	    prompt.onYes();
 	}
-	
     }
     
     public void redefine(Player player, String regionId) throws PlotControlException {
@@ -780,10 +774,10 @@ public class PlotControl {
 	ProtectedRegion region = regionManager.getRegion(regionId);
 	
 	if (region == null) {
-	    throw new PlotControlException("Region \"" + regionId + "\" doesn't exist.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_exists, regionId));
 	} else if (!region.isOwner(this.mgr.getWorldGuard().wrapPlayer(player)) && !player.hasPermission(Permission.REDEFINE_ANYREGION)) {
 	    // must be owner
-	    throw new PlotControlException("You can only redefine your own regions.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.error_region_redefine));
 	}
 	
 	// get old values
@@ -820,19 +814,17 @@ public class PlotControl {
 		// check balance
 		double balance = this.mgr.getEconomy().getBalance(player);
 		if (balance < cost) {
-		    throw new PlotControlException(ChatColor.RED + "You can't afford to resize region " + ChatColor.WHITE + regionId + ChatColor.RED + "' from " + ChatColor.RED + oldWidth + "x" + oldLength + "x" + oldHeight + ChatColor.RED + " to " + ChatColor.WHITE + newWidth + "x" + newLength + "x" + newHeight + ChatColor.RED + ". You only have " + ChatColor.WHITE + this.mgr.getEconomy().format(balance) + ChatColor.RED + ", but it costs " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.RED + ".");
+		    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_not_enough_money, this.mgr.getEconomy().format(balance), this.mgr.getEconomy().format(cost)));
 		}
 		// send cost info
-		player.sendMessage(ChatColor.GREEN + "Are you sure you want to pay " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + " and ");
+		SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_resize_pay, this.mgr.getEconomy().format(cost), region.getId(), oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
 	    } else {
 		// no cost
-		player.sendMessage(ChatColor.GREEN + "Are you sure you want to ");
+		SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_resize, region.getId(), oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
 	    }
-	    // ... the rest of the message
-	    player.sendMessage(ChatColor.GREEN + "resize region '" + ChatColor.WHITE + region.getId() + ChatColor.GREEN + "' from " + ChatColor.WHITE + oldWidth + "x" + oldLength + "x" + oldHeight + ChatColor.GREEN + " to " + ChatColor.WHITE + newWidth + "x" + newLength + "x" + newHeight + ChatColor.GREEN + "?");
 	} else {
 	    // smaller region
-	    player.sendMessage(ChatColor.GREEN + "Are you sure you want to resize region '" + ChatColor.WHITE + region.getId() + ChatColor.GREEN + "' from " + ChatColor.WHITE + oldWidth + "x" + oldLength + "x" + oldHeight + ChatColor.GREEN + " to " + ChatColor.WHITE + newWidth + "x" + newLength + "x" + newHeight + ChatColor.GREEN + "?");
+	    SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_resize, region.getId(), oldWidth, oldLength, oldHeight, newWidth, newLength, newHeight);
 	    
 	    if (enableCost) {
 		// get comma seperated string of owner names
@@ -848,8 +840,7 @@ public class PlotControl {
 		}
 		
 		// send info about refund
-		player.sendMessage(ChatColor.GREEN + "The refund of " + ChatColor.WHITE + this.mgr.getEconomy().format(Math.abs(cost)) + ChatColor.GREEN + " will be shared");
-		player.sendMessage(ChatColor.GREEN + "amongst " + ChatColor.WHITE + ownerNames);
+		SelfServiceMessage.sendFormatedMessage(player, MessageKey.sharing_refund_with, this.mgr.getEconomy().format(Math.abs(cost)), ownerNames);
 	    }
 	}
 	
@@ -894,7 +885,7 @@ public class PlotControl {
 		    
 		} catch (StorageException e) {
 		    // i think your server has bigger problems
-		    String msg = ChatColor.RED + "Failed to save new region with id \"" + regionNew.getId() + "\": " + e.getMessage();
+		    String msg = SelfServiceMessage.getFormatedMessage(MessageKey.error_region_saved, regionNew.getId(), e.getMessage());
 		    player.sendMessage(msg);
 		    PlotControl.this.mgr.getPlugin().getLogger().log(Level.WARNING, msg, e);
 		}
@@ -904,7 +895,7 @@ public class PlotControl {
 	    
 	    @Override
 	    protected Prompt onNo() {
-		player.sendMessage(ChatColor.RED + "Did not resize the region.");
+		SelfServiceMessage.sendMessage(player, MessageKey.player_not_resize);
 		return Prompt.END_OF_CONVERSATION;
 	    }
 	};
@@ -920,7 +911,7 @@ public class PlotControl {
 	// doesn't exist?
 	final Plot plot = plotWorld.getPlot(regionId);
 	if (plot == null) {
-	    throw new PlotControlException("Region \"" + regionId + "\" doesn't exist.");
+	    throw new PlotControlException(SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_exists, regionId));
 	}
 	
 	final ProtectedRegion region = plot.getRegion();
@@ -940,9 +931,8 @@ public class PlotControl {
 		    for (UUID homelessUUID : homelessUUIDs) {
 			homelessString += ", " + PlayerUUIDConverter.toPlayerName(homelessUUID);
 		    }
-		    homelessString = homelessString.substring(2);// remove comma
-		    // and space
-		    throw new PlotControlException("Sorry, you can't delete this region. The following players would become homeless: " + homelessString);
+		    homelessString = homelessString.substring(2);// remove comma and space
+		    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.player_can_not_delete) + " " + SelfServiceMessage.getFormatedMessage(MessageKey.error_people_get_homeless, homelessString));
 		}
 	    }
 	}
@@ -951,7 +941,7 @@ public class PlotControl {
 	
 	// check if there are still renters
 	if (plot.hasRenters()) {
-	    throw new PlotControlException("You can't delete this region when players are still renting it.");
+	    throw new PlotControlException(SelfServiceMessage.getMessage(MessageKey.player_can_not_delete_renting));
 	}
 	
 	Set<UUID> ownerUUIDs;
@@ -983,19 +973,18 @@ public class PlotControl {
 		}
 		
 		// send refund question message
-		player.sendMessage(ChatColor.GREEN + "Are you sure you want to delete region '" + ChatColor.WHITE + regionId + ChatColor.GREEN + "' and share the refund of " + ChatColor.WHITE + this.mgr.getEconomy().format(refund) + ChatColor.GREEN + " amongst '" + ChatColor.WHITE + nameString + ChatColor.GREEN + "'?");
+		SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_delete_share, regionId, this.mgr.getEconomy().format(refund), nameString);
 	    }
 	    
 	} else {
-	    // setting share to zero, otherwise the final variable will give a
-	    // warning
+	    // setting share to zero, otherwise the final variable will give a warning
 	    share = 0;
 	    refund = 0;
 	    
 	    // console will not get this message
 	    if (player instanceof Player) {
 		// send normal message
-		player.sendMessage(ChatColor.GREEN + "Are you sure you want to delete region '" + ChatColor.WHITE + regionId + ChatColor.GREEN + "'?");
+		SelfServiceMessage.sendFormatedMessage(player, MessageKey.player_will_delete, regionId);
 	    }
 	}
 	
@@ -1007,7 +996,7 @@ public class PlotControl {
 	    @Override
 	    protected Prompt onYes() {
 		if (!plot.delete()) {
-		    player.sendMessage(ChatColor.RED + "Failed to delete region \"" + plot.getRegionId() + "\". There might still be players renting that region.");
+		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.error_region_delete, plot.getRegionId());
 		} else {
 		    try {
 			RegionManager regionManager = plotWorld.getRegionManager();
@@ -1042,7 +1031,7 @@ public class PlotControl {
 			PlotControl.this.mgr.messages.removed(player, ownerUUIDs, memberUUIDs, plot.getRegionId(), refund);
 			
 		    } catch (StorageException e) {
-			player.sendMessage(ChatColor.RED + "Failed to delete region with id \"" + plot.getRegionId() + "\": " + e.getMessage());
+			SelfServiceMessage.sendFormatedMessage(player, MessageKey.error_region_delete, plot.getRegionId(), e.getMessage());
 		    }
 		}
 		return Prompt.END_OF_CONVERSATION;
@@ -1050,7 +1039,7 @@ public class PlotControl {
 	    
 	    @Override
 	    protected Prompt onNo() {
-		player.sendMessage(ChatColor.RED + "Region '" + plot.getRegionId() + "' was not deleted.");
+		SelfServiceMessage.sendMessage(player, MessageKey.player_not_delete);
 		return Prompt.END_OF_CONVERSATION;
 	    }
 	};
@@ -1062,7 +1051,6 @@ public class PlotControl {
 	
 	// run YesNoPrompt
 	new ConversationFactory(this.mgr.getPlugin()).withFirstPrompt(prompt).withLocalEcho(false).withModality(false).buildConversation((Player) player).begin();
-	
     }
     
     public void sendRegionCount(CommandSender sender, OfflinePlayer owner, World world) {
@@ -1075,7 +1063,7 @@ public class PlotControl {
 	    countString = ChatColor.RED + countString;
 	}
 	
-	sender.sendMessage(ChatColor.GREEN + "Player " + ChatColor.WHITE + "'" + owner.getName() + "'" + ChatColor.GREEN + " owns " + countString + ChatColor.GREEN + " regions in world " + ChatColor.WHITE + "'" + world.getName() + "'" + ChatColor.GREEN + ".");
+	SelfServiceMessage.sendFormatedMessage(sender, MessageKey.player_owns, owner.getName(), countString, world.getName());
     }
     
     public void sendWorth(CommandSender sender, String regionId, World world) {
@@ -1083,29 +1071,26 @@ public class PlotControl {
 	RegionManager regionManager = plotWorld.getRegionManager();
 	ProtectedRegion region = regionManager.getRegion(regionId);
 	if (region == null) {
-	    sender.sendMessage(ChatColor.RED + "Region '" + regionId + "' doesn't exist in world '" + world.getName() + "'.");
+	    SelfServiceMessage.sendFormatedMessage(sender, MessageKey.error_region_not_exists, regionId);
 	    return;
 	}
 	
 	int width = Math.abs(region.getMaximumPoint().getBlockX() - region.getMinimumPoint().getBlockX()) + 1;
 	int length = Math.abs(region.getMaximumPoint().getBlockZ() - region.getMinimumPoint().getBlockZ()) + 1;
-	sender.sendMessage(ChatColor.GREEN + "Region " + ChatColor.WHITE + region.getId() + ChatColor.GREEN + " with a size of " + ChatColor.WHITE + String.valueOf(width) + "x" + String.valueOf(length) + ChatColor.GREEN + " blocks, in world \"" + world.getName() + "\" ");
 	double cost = getWorth(width, length, plotWorld.getConfig().getBlockWorth());
-	sender.sendMessage(ChatColor.GREEN + "is worth about " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + ", based on the region's size.");
+	SelfServiceMessage.sendFormatedMessage(sender, MessageKey.region_worth, width, length, world.getName(), this.mgr.getEconomy().format(cost));
     }
     
     public void sendWorth(CommandSender sender, int width, int length, World world) {
 	PlotWorld plotWorld = this.mgr.getPlotWorld(world);
 	double cost = getWorth(width, length, plotWorld.getConfig().getBlockWorth());
-	sender.sendMessage(ChatColor.GREEN + "For a region with a size of " + ChatColor.WHITE + String.valueOf(width) + "x" + String.valueOf(length) + ChatColor.GREEN + " blocks, in world \"" + world.getName() + "\" ");
-	sender.sendMessage(ChatColor.GREEN + "you would pay about " + ChatColor.WHITE + this.mgr.getEconomy().format(cost) + ChatColor.GREEN + ".");
+	SelfServiceMessage.sendFormatedMessage(sender, MessageKey.region_worth, width, length, world.getName(), this.mgr.getEconomy().format(cost));
     }
     
     public void sendWorth(CommandSender sender, double money, World world) {
 	PlotWorld plotWorld = this.mgr.getPlotWorld(world);
-	int size = getSizeByWorth(money, plotWorld.getConfig().getBlockWorth());
-	sender.sendMessage(ChatColor.GREEN + "For " + ChatColor.WHITE + this.mgr.getEconomy().format(money) + ChatColor.GREEN + ", ");
-	sender.sendMessage(ChatColor.GREEN + "you can get a region with a size of about " + ChatColor.WHITE + String.valueOf(size) + "x" + String.valueOf(size) + ChatColor.GREEN + " blocks, in world \"" + world.getName() + "\".");
+	int size = (int) Math.sqrt(getSizeByWorth(money, plotWorld.getConfig().getBlockWorth()));
+	SelfServiceMessage.sendFormatedMessage(sender, MessageKey.region_worth, size, size, world.getName(), this.mgr.getEconomy().format(money));
     }
     
     public static int getSizeByWorth(double money, double blockWorth) {

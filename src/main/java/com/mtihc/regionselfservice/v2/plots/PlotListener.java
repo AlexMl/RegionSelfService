@@ -31,6 +31,8 @@ import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForRentSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForSaleSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignType;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
 import com.mtihc.regionselfservice.v2.util.PlayerUUIDConverter;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
@@ -76,14 +78,14 @@ class PlotListener implements Listener {
 	    // add sign to plot... later
 	    
 	} catch (SignException e) {
-	    // invalid sign Cancel the event
-	    denieSignChange(player, ChatColor.RED + "Failed to create " + type.name() + " sign:\n" + e.getMessage(), sign.getBlock(), true, event, true);
+	    // invalid sign. Cancel the event
+	    denieSignChange(player, SelfServiceMessage.getFormatedMessage(MessageKey.error_sign_creation, type.name(), e.getMessage()), sign.getBlock(), true, event, true);
 	    return;
 	}
 	
 	ProtectedRegion region = plot.getRegion();
 	if (region == null) {
-	    denieSignChange(player, ChatColor.RED + "Failed to create " + type.name() + " sign.\nRegion \"" + plot.getRegionId() + "\" doesn't exist.", sign.getBlock(), true, event, true);
+	    denieSignChange(player, SelfServiceMessage.getFormatedMessage(MessageKey.error_sign_creation_region, type.name(), plot.getRegionId()), sign.getBlock(), true, event, true);
 	    return;
 	}
 	
@@ -96,27 +98,26 @@ class PlotListener implements Listener {
 	    
 	    // check permission to rent out
 	    if (!player.hasPermission(Permission.RENTOUT)) {
-		denieSignChange(player, ChatColor.RED + "You don't have permission to rent out regions.", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_rent_no_perm), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
 	    // check permission to rent out, unowned regions
 	    if (!isOwner && !player.hasPermission(Permission.RENTOUT_ANYREGION)) {
-		denieSignChange(player, ChatColor.RED + "You can't rent out regions that you don't own.", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_rent_not_own), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
 	    // check permission to rent out, outside the region
 	    if (!isInside && !player.hasPermission(Permission.RENTOUT_ANYWHERE)) {
-		denieSignChange(player, ChatColor.RED + "You can't place this sign outside the region itself.", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_sign_outside), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
 	    ForRentSignText rentText = (ForRentSignText) signText;
-	    // check if is rented out, then player typed a name on the sign
-	    // instead of cost
+	    // check if is rented out, then player typed a name on the sign instead of cost
 	    if (rentText.isRentedOut()) {
-		denieSignChange(player, ChatColor.RED + "Invalid sign text. Expected rent-cost and rent-time.", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_sign_not_valid_rent), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
@@ -133,31 +134,21 @@ class PlotListener implements Listener {
 	    double maxRentCost = plot.getWorth(config.getOnRentMaxBlockCost());
 	    // interpret the min/max rent cost as "rent cost per hour"
 	    // convert them to min/max rent cost as "rent cost per rentTime"
-	    double maxRentCostConverted = maxRentCost * (rentTime / (1000.0 * 60.0 * 60.0)); // milliseconds
-	    // ->
-	    // hours
+	    double maxRentCostConverted = maxRentCost * (rentTime / (1000.0 * 60.0 * 60.0)); // milliseconds->hours
 	    double minRentCostConverted = minRentCost * (rentTime / (1000.0 * 60.0 * 60.0));
 	    
 	    if (rentCost < minRentCostConverted) {
-		StringBuilder string = new StringBuilder();
-		string.append(ChatColor.RED + "The price is too low.\n");
-		string.append("The rent-price must be between " + this.mgr.getEconomy().format(minRentCostConverted) + " and " + this.mgr.getEconomy().format(maxRentCostConverted) + " per " + rentTimeString + ".\n");
-		string.append("In other words, between " + this.mgr.getEconomy().format(minRentCost) + " and " + this.mgr.getEconomy().format(maxRentCost) + " per hour.");
-		denieSignChange(player, string.toString(), sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getFormatedMessage(MessageKey.sign_rent_price_low, this.mgr.getEconomy().format(minRentCostConverted), this.mgr.getEconomy().format(maxRentCostConverted), rentTimeString, this.mgr.getEconomy().format(minRentCost), this.mgr.getEconomy().format(maxRentCost)), sign.getBlock(), true, event, true);
 		return;
 	    } else if (rentCost > maxRentCostConverted) {
-		StringBuilder string = new StringBuilder();
-		string.append(ChatColor.RED + "The price is too high!\n");
-		string.append("The rent-price must be between " + this.mgr.getEconomy().format(minRentCostConverted) + " and " + this.mgr.getEconomy().format(maxRentCostConverted) + " per " + rentTimeString + ".\n");
-		string.append("In other words, between " + this.mgr.getEconomy().format(minRentCost) + " and " + this.mgr.getEconomy().format(maxRentCost) + " per hour.");
-		denieSignChange(player, string.toString(), sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getFormatedMessage(MessageKey.sign_rent_price_high, this.mgr.getEconomy().format(minRentCostConverted), this.mgr.getEconomy().format(maxRentCostConverted), rentTimeString, this.mgr.getEconomy().format(minRentCost), this.mgr.getEconomy().format(maxRentCost)), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
 	    // check permission to rent out, for free
 	    if (rentCost == 0) {
 		if (!player.hasPermission(Permission.RENTOUT_FREE)) {
-		    denieSignChange(player, ChatColor.RED + "You don't have permission to rent out regions for free.", sign.getBlock(), true, event, true);
+		    denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_rent_no_perm), sign.getBlock(), true, event, true);
 		    return;
 		}
 	    }
@@ -173,19 +164,19 @@ class PlotListener implements Listener {
 	    
 	    // check permission to sell
 	    if (!player.hasPermission(Permission.SELL)) {
-		denieSignChange(player, ChatColor.RED + "You don't have permission to sell regions.", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_sell_no_perm), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
 	    // check permission to sell, unowned regions
 	    if (!isOwner && !player.hasPermission(Permission.SELL_ANYREGION)) {
-		denieSignChange(player, ChatColor.RED + "You can't sell regions that you don't own.", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_sell_not_own), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
 	    // check permission to sell, outside the region
 	    if (!isInside && !player.hasPermission(Permission.SELL_ANYWHERE)) {
-		denieSignChange(player, ChatColor.RED + "You can't place this sign outside the region itself.", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_sign_outside), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
@@ -200,7 +191,7 @@ class PlotListener implements Listener {
 			homelessString += ", " + PlayerUUIDConverter.toPlayerName(homelessUUID);
 		    }
 		    homelessString = homelessString.substring(2);
-		    denieSignChange(player, ChatColor.RED + "Sorry, you can't sell this region. The following players would become homeless: " + homelessString, sign.getBlock(), true, event, true);
+		    denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_region_can_not_sell) + " " + SelfServiceMessage.getFormatedMessage(MessageKey.error_people_get_homeless, homelessString), sign.getBlock(), true, event, true);
 		    return;
 		}
 	    }
@@ -215,17 +206,17 @@ class PlotListener implements Listener {
 	    double maxSellCost = plot.getWorth(config.getOnSellMaxBlockCost());
 	    
 	    if (sellCost < minSellCost) {
-		denieSignChange(player, ChatColor.RED + "The price is too low.\nThe sell-cost must be between " + this.mgr.getEconomy().format(minSellCost) + " and " + this.mgr.getEconomy().format(maxSellCost) + ".", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getFormatedMessage(MessageKey.sign_sell_price_low, this.mgr.getEconomy().format(minSellCost), this.mgr.getEconomy().format(maxSellCost)), sign.getBlock(), true, event, true);
 		return;
 	    } else if (sellCost > maxSellCost) {
-		denieSignChange(player, ChatColor.RED + "The price is too high.\nThe sell-cost must be between " + this.mgr.getEconomy().format(minSellCost) + " and " + this.mgr.getEconomy().format(maxSellCost) + ".", sign.getBlock(), true, event, true);
+		denieSignChange(player, SelfServiceMessage.getFormatedMessage(MessageKey.sign_sell_price_high, this.mgr.getEconomy().format(minSellCost), this.mgr.getEconomy().format(maxSellCost)), sign.getBlock(), true, event, true);
 		return;
 	    }
 	    
 	    // check permission to sell, for free
 	    if (sellCost == 0) {
 		if (!player.hasPermission(Permission.SELL_FREE)) {
-		    denieSignChange(player, ChatColor.RED + "You don't have permission to sell regions for free.", sign.getBlock(), true, event, true);
+		    denieSignChange(player, SelfServiceMessage.getMessage(MessageKey.error_sell_no_perm), sign.getBlock(), true, event, true);
 		    return;
 		}
 	    }
@@ -238,7 +229,7 @@ class PlotListener implements Listener {
 	    
 	    this.mgr.messages.upForSale(player, region.getOwners().getUniqueIds(), region.getMembers().getUniqueIds(), region.getId(), sellCost);
 	} else {
-	    player.sendMessage(ChatColor.RED + "Unknown sign type: \"" + type.name() + "\"");
+	    SelfServiceMessage.sendMessage(player, MessageKey.error_sign_not_valid_type);
 	    return;
 	}
 	
@@ -271,13 +262,13 @@ class PlotListener implements Listener {
 				return;
 			    } else {
 				// protected region doesn't exist
-				denieSignChange(event.getPlayer(), ChatColor.RED + "Sorry, region '" + plot.getRegionId() + "' doesn't exist anymore.", event.getClickedBlock(), true, event, false);
+				denieSignChange(event.getPlayer(), SelfServiceMessage.getFormatedMessage(MessageKey.error_region_not_exists, plot.getRegionId()), event.getClickedBlock(), true, event, false);
 				plot.delete();
 				return;
 			    }
 			} else {
 			    // didn't find the plot information
-			    denieSignChange(event.getPlayer(), ChatColor.RED + "Sorry, this sign is invalid. Couldn't find the plot information.", event.getClickedBlock(), true, event, false);
+			    denieSignChange(event.getPlayer(), SelfServiceMessage.getMessage(MessageKey.error_sign_not_valid) + " " + SelfServiceMessage.getMessage(MessageKey.error_no_plotinfo), event.getClickedBlock(), true, event, false);
 			    return;
 			}
 		    } catch (SignException e) {
@@ -391,7 +382,7 @@ class PlotListener implements Listener {
 	    boolean isOwner = region.isOwner(this.mgr.getWorldGuard().wrapPlayer(player));
 	    if (!isOwner && !player.hasPermission(Permission.BREAK_ANY_SIGN)) {
 		// not an owner, and no special permission
-		player.sendMessage(ChatColor.RED + "You don't own this region.");
+		SelfServiceMessage.sendMessage(player, MessageKey.error_region_not_own);
 		// protect the sign
 		event.setCancelled(true);
 		return;
@@ -400,9 +391,9 @@ class PlotListener implements Listener {
 		plot.save();
 		Collection<IPlotSignData> signs = plot.getSigns(type);
 		if (signs == null || signs.isEmpty()) {
-		    player.sendMessage(ChatColor.GREEN + "You broke the last " + type.name() + " sign of region \"" + plot.getRegionId() + "\".");
+		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.sign_broke, type.name(), plot.getRegionId());
 		} else {
-		    player.sendMessage(ChatColor.GREEN + "You broke a " + type.name() + " sign of region \"" + plot.getRegionId() + "\". There are " + signs.size() + " " + type.name() + " signs left.");
+		    SelfServiceMessage.sendFormatedMessage(player, MessageKey.sign_broke_last, type.name(), plot.getRegionId(), signs.size(), type.name());
 		}
 	    }
 	} else {
@@ -422,6 +413,5 @@ class PlotListener implements Listener {
 		break;
 	    }
 	}
-	
     }
 }

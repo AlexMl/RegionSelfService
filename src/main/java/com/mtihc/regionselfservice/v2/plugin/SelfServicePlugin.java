@@ -144,6 +144,5 @@ public class SelfServicePlugin extends JavaPlugin {
 	    getLogger().log(Level.INFO, "    " + vault.getDescription().getFullName() + " (" + econ.getName() + ")");
 	    return new EconomyVault(econ, getLogger());
 	}
-	
     }
 }

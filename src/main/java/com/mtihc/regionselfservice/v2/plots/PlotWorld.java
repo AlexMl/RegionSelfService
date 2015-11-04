@@ -84,8 +84,7 @@ public class PlotWorld {
 		// count regions of owner
 		int count = this.manager.control.getRegionCountOfPlayer(getWorld(), playerUUID);
 		if (count < 2) {
-		    // player only has 1 region -> would get homeless if he
-		    // sells it
+		    // player only has 1 region -> would get homeless if he sells it
 		    result.add(playerUUID);
 		}
 	    }

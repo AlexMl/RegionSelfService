@@ -7,7 +7,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -20,6 +19,8 @@ import com.mtihc.regionselfservice.v2.plots.signs.ForSaleSignData;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignText.ForRentSignText;
 import com.mtihc.regionselfservice.v2.plots.signs.PlotSignType;
 import com.mtihc.regionselfservice.v2.plots.util.TimeStringConverter;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage;
+import com.mtihc.regionselfservice.v2.plugin.SelfServiceMessage.MessageKey;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
@@ -115,13 +116,11 @@ public abstract class PlotManager {
 				rentSign.setRentPlayer(null);
 			    } else {
 				if (newTime <= ((Plot) plot).getRentTimeExtendAllowedAt()) {
-				    // TODO move code to
-				    // messages.rent_extend_warning method
-				    // TODO implement permission for this
-				    // information
+				    // TODO move code to messages.rent_extend_warning method
+				    // TODO implement permission for this information
 				    Player renter = Bukkit.getPlayer(rentSign.getRentPlayerUUID());
 				    if (renter != null) {
-					renter.sendMessage(ChatColor.GREEN + "If you want to stay member of region " + ChatColor.WHITE + plot.getRegionId() + ChatColor.GREEN + ", you should extend the rent time now. You have " + ChatColor.WHITE + new TimeStringConverter().convert(newTime) + ChatColor.GREEN + " remaining.");
+					SelfServiceMessage.sendFormatedMessage(renter, MessageKey.rent_time_warning, plot.getRegionId(), new TimeStringConverter().convert(newTime));
 				    }
 				}
 			    }
@@ -129,8 +128,7 @@ public abstract class PlotManager {
 			    rentSign.setRentPlayerTime(newTime);
 			    
 			    // update sign
-			    // if rent-player is null, it will automatically
-			    // write cost:time instead of player:time
+			    // if rent-player is null, it will automatically write cost:time instead of player:time
 			    ForRentSignText rentText = new ForRentSignText(plotWorld, plot.getRegionId(), rentSign.getRentPlayerUUID(), newTime);
 			    rentText.applyToSign(sign);
 			}
@@ -149,12 +147,7 @@ public abstract class PlotManager {
 	    }
 	};
 	
-	Bukkit.getScheduler().runTaskTimer(plugin, rentTimer, 0L, 60 * 20L); // scheduleSyncRepeatingTask(plugin,
-	// rentTimer,
-	// 0,
-	// 60
-	// *
-	// 20);
+	Bukkit.getScheduler().runTaskTimer(plugin, rentTimer, 0L, 60 * 20L);
     }
     
     public IPlotWorldConfig getDefaultWorldConfig() {
